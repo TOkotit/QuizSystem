@@ -8,16 +8,8 @@ from . import views
 app_name = "polls"
 
 urlpatterns = [
-    path('', RedirectView.as_view(pattern_name='polls:list', permanent=False)),
-    path('list/', views.polls_list, name='list'),
-    path('add/', views.polls_add, name='add'),
-    path('edit/<int:poll_id>/', views.polls_edit, name='edit'),
-    path('delete/<int:poll_id>/', views.polls_delete, name='delete_poll'),
-    path('end/<int:poll_id>/', views.end_poll, name='end_poll'),
-    path('edit/<int:poll_id>/choice/add/', views.add_choice, name='add_choice'),
-    path('edit/choice/<int:choice_id>/', views.choice_edit, name='choice_edit'),
-    path('delete/choice/<int:choice_id>/',
-         views.choice_delete, name='choice_delete'),
-    path('<int:poll_id>/', views.poll_detail, name='detail'),
-    path('<int:poll_id>/vote/', views.poll_vote, name='vote'),
+    path('api/polls/', PollListCreateAPIView.as_view(), name='poll-list-create'),
+
+    path('api/polls/<int:id>/', PollRetrieveUpdateDestroyAPIView.as_view(), name='poll-detail'),
+    path('api/polls/<int:poll_id>/vote/', views.VoteCreateAPIView.as_view(), name='poll-vote'),
 ]
