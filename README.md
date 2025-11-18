@@ -9,14 +9,18 @@
 ## Вводить комманды в консоль по очереди
 
 ### 1. Backend
-### cd "Django backend"
-### python -m venv venv
-### .\venv\Scripts\activate
-### pip install -r requirements.txt
-### python manage.py migrate
-### python manage.py runserver
+```
+cd "Django backend"
+python -m venv venv
+.\venv\Scripts\activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+```
 
 ### 2. Frontend
-### cd "../React frontend"
-### npm install
-### npm run dev
+```
+cd "../React frontend"
+npm install
+npm run dev
+```
