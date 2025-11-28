@@ -40,7 +40,6 @@ INSTALLED_APPS = [
     "polls.apps.PollsConfig",
     'rest_framework',
     'corsheaders',  # Для разрешения запросов с React
-    'polls',
     # "accounts.apps.AccountsConfig", я пока снёс регистрацию, она пока не нужна  TODO: потом вернуть
 ]
 
@@ -124,12 +123,10 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 
-STATIC_URL = "/static/"
-STATICFILES_DIRS = [os.path.join(BASE_DIR, "Django backend", "static"),]
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
-
+STATIC_URL = '/static/'
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # Порт, на котором работает Vite/React
     "http://127.0.0.1:5173",
