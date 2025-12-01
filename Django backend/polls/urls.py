@@ -1,20 +1,23 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import PollViewSet, VoteCreateAPIView
+from django.urls import path
 
-# Создаем роутер и регистрируем наш PollViewSet
-router = DefaultRouter()
-# Регистрация PollViewSet. Базовый URL будет 'polls/'
-router.register(r'polls', PollViewSet, basename='poll')
+from django.views.generic.base import RedirectView
+from . import views
 
-# Определение URL-маршрутов для нашего приложения polls
+
+
+app_name = "polls"
+
 urlpatterns = [
-    # Маршруты, сгенерированные PollViewSet (CRUD для опросов)
-    # Например: /api/polls/, /api/polls/{id}/
-    path('', include(router.urls)),
-
-    # Специальный маршрут для голосования
-    # URL: /api/polls/{poll_pk}/vote/
-    # Используем <int:poll_pk> для передачи ID опроса во VoteCreateAPIView
-    path('polls/<int:poll_pk>/vote/', VoteCreateAPIView.as_view(), name='poll-vote'),
+    path('', RedirectView.as_view(pattern_name='polls:list', permanent=False)),
+    path('list/', views.polls_list, name='list'),
+    path('add/', views.polls_add, name='add'),
+    path('edit/<int:poll_id>/', views.polls_edit, name='edit'),
+    path('delete/<int:poll_id>/', views.polls_delete, name='delete_poll'),
+    path('end/<int:poll_id>/', views.end_poll, name='end_poll'),
+    path('edit/<int:poll_id>/choice/add/', views.add_choice, name='add_choice'),
+    path('edit/choice/<int:choice_id>/', views.choice_edit, name='choice_edit'),
+    path('delete/choice/<int:choice_id>/',
+         views.choice_delete, name='choice_delete'),
+    path('<int:poll_id>/', views.poll_detail, name='detail'),
+    path('<int:poll_id>/vote/', views.poll_vote, name='vote'),
 ]

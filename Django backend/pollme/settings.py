@@ -38,14 +38,10 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "polls.apps.PollsConfig",
-    'rest_framework',
-    'corsheaders',  # Для разрешения запросов с React
     # "accounts.apps.AccountsConfig", я пока снёс регистрацию, она пока не нужна  TODO: потом вернуть
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.security.SecurityMiddleware',
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -125,17 +121,3 @@ USE_TZ = True
 
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
-
-STATIC_URL = '/static/'
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  # Порт, на котором работает Vite/React
-    "http://127.0.0.1:5173",
-]
-CORS_ALLOW_METHODS = [
-    'DELETE',
-    'GET',
-    'OPTIONS',
-    'PATCH',
-    'POST',
-    'PUT',
-]
