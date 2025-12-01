@@ -22,8 +22,7 @@ admin.site.site_header = 'QuizWidget System'
 admin.site.site_title = 'QuizWidget Admin'
 
 urlpatterns = [
-    path('admin/', admin.site.urls),  # <-- ЭТО КОД АДМИНА
-
-    path('api/', include('polls.urls')),
+    path('', include('polls.urls', namespace="polls")),
+    path('admin/', admin.site.urls),
     # path('accounts/', include('accounts.urls', namespace="accounts")), TODO: как понадобиться регистрация - вернуть
 ]
