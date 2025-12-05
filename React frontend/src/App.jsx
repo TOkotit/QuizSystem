@@ -4,7 +4,9 @@ import {
     ReactFlowProvider, 
     addEdge, 
     useNodesState, 
-    useEdgesState 
+    useEdgesState,
+    Background,
+    BackgroundVariant
 } from '@xyflow/react';
 import ResizableNode from './ResizableNode.jsx'; // Импортируем ваш кастомный узел
 import './App.css'; 
@@ -57,6 +59,7 @@ function App() {
                     nodeTypes={nodeTypes} // Передаем кастомные узлы
                 >
                     {/* Здесь могут быть MiniMap, Controls и т.д. */}
+                    <Background variant={BackgroundVariant.Dots} gap={12} size={1} bgColor='white'/>
                 </ReactFlow>
             </div>
         </ReactFlowProvider>
