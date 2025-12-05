@@ -10,8 +10,6 @@ export const usePollsApi = () => {
     // Имитируем, что аутентификация всегда готова
     const [isAuthReady, setIsAuthReady] = useState(true); 
 
-    // Имитация задержки сети
-    const mockDelay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
     // 3. МЕТОД: ПОЛУЧЕНИЕ ВСЕХ ОПРОСОВ (MOCK)
     const fetchAllPolls = useCallback(async () => {
@@ -19,7 +17,6 @@ export const usePollsApi = () => {
         setError(null);
         
         try {
-            await mockDelay(500); // Имитация загрузки
             // Возвращаем тестовые данные
             return [
                 { id: 1, text: "Опрос о качестве обслуживания клиентов" }, 
@@ -40,7 +37,6 @@ export const usePollsApi = () => {
         setError(null);
         
         try {
-            await mockDelay(1000); // Имитация сохранения
             console.log("MOCK API: Опрос создан с данными:", pollData);
             
             // Возвращаем объект, похожий на ответ реального API
@@ -59,7 +55,6 @@ export const usePollsApi = () => {
         } finally {
             setLoading(false);
         }
-
     }, []);
 
 
