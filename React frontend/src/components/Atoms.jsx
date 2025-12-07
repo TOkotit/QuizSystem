@@ -204,7 +204,6 @@ export const RadioButton = ({ id, name, value, checked, onChange, children }) =>
         borderRadius: '50%', // Делает его круглым
         border: `2px solid ${checked ? '#007bff' : '#6c757d'}`, // Синяя рамка при checked
         backgroundColor: '#fff',
-        marginRight: '8px',
         position: 'relative',
         flexShrink: 0,
         transition: 'border-color 0.2s',
