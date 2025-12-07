@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyledInput, ActionButton } from '../Atoms'; // Убрал CheckboxSquare, если не используется
+import { StyledInput, ActionButton, RadioButton, CheckboxSquare } from '../Atoms'; // Убрал CheckboxSquare, если не используется
 
 export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
     // --- Общие параметры теста ---
@@ -27,7 +27,8 @@ export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
             score: 1,       // Баллы
             correctText: '',
             options: [''],
-            correctOptions: [],
+            correctRadioOption: '',
+            correctBoxOptions: [],
         };
         
         const newTasks = [...tasks, newTask];
@@ -71,6 +72,23 @@ export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
         updateActiveTask('options', resultOptions)
     };
 
+    const handleRadioChange = (optionValue) => {
+        updateActiveTask('correctRadioOption', optionValue)
+    };
+
+    const handleCheckboxChange = (optionValue, correctBoxOptions) => {
+        let res = []
+
+        if (correctBoxOptions.includes(optionValue)) {
+            // Если уже выбрано -> удаляем из массива
+            res = correctBoxOptions.filter((item) => item !== optionValue);
+        } else {
+            // Если не выбрано -> добавляем в массив
+            res =  [...correctBoxOptions, optionValue];
+        }
+
+        updateActiveTask('correctBoxOptions', res)
+    };
     // Стили
     const oneSettingStyle = { 
         display: 'flex', gap: '10px', alignItems: 'center', 
@@ -140,15 +158,18 @@ export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
             {/* 4. РЕДАКТОР ТЕКУЩЕГО ЗАДАНИЯ */}
             <div style={{
                 padding:'10px',
-                marginBottom:'20px',
                 height:'100%',
+                overflowY: 'auto',
+                marginBottom:'20px',
                 color: '#333', }}>
                 {activeTaskIndex !== null && tasks[activeTaskIndex] ? (
-                    <div style={{display: 'flex', 
+                    <div style={{display: 'flex',
                             flexDirection: 'column',
-                            gap: '10px', }}>
+                            gap: '10px',
+                             }}>
 
                         <div style={{ display: 'flex', 
+                            flex:1,
                             flexDirection: 'column',
                             gap: '10px', }}>
                             <label style={{fontSize: '18px',fontWeight:'bold',}}>Вопрос:</label>
@@ -157,7 +178,7 @@ export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
                                 onChange={(e) => updateActiveTask('question', e.target.value)}
                                 style={{ 
                                     width: '100%',
-                                    minHeight: '80px',
+                                    minHeight:'200px',
                                     fontSize: '18px',
                                     resize: 'vertical',
                                     color: '#333',
@@ -199,43 +220,59 @@ export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
                                 />
                             </div>
                         </div>)}
-                        <div>
-                            {tasks[activeTaskIndex].type === 'text' && (
-                                <textarea
-                                value={tasks[activeTaskIndex].correctText}
-                                onChange={(e) => updateActiveTask('correctText', e.target.value)}
-                                style={{ 
-                                    width: '100%',
-                                    minHeight: '80px',
-                                    fontSize: '18px',
-                                    resize: 'vertical',
-                                    color: '#333',
-                                    backgroundColor: '#ebebebff' }}
-                                placeholder="Введите правильные варианты с разделением через ENTER"
-                            />
-                            )}
+                        
+                        {tasks[activeTaskIndex].type === 'text' && (
+                            <textarea
+                            value={tasks[activeTaskIndex].correctText}
+                            onChange={(e) => updateActiveTask('correctText', e.target.value)}
+                            style={{ 
+                                width: '100%',
+                                minHeight: '80px',
+                                fontSize: '18px',
+                                resize: 'vertical',
+                                color: '#333',
+                                backgroundColor: '#ebebebff' }}
+                            placeholder="Введите правильные варианты с разделением через ENTER"
+                        />
+                        )}
 
-                            {tasks[activeTaskIndex].type === 'single' && (
-                                <div>
-                                  {tasks[activeTaskIndex].options.map((opt, index) => (
-                                            <div key={index}> 
-                                            <StyledInput 
-                                              
-                                              placeholder={`Вариант ${index + 1}`}
-                                              value={opt}
-                                              onChange={(e) => handleOptionChange(index, e.target.value)}
-                                            />
-                                            </div>
-                                          ))}
-                                </div>
-                            )}
+                        {tasks[activeTaskIndex].type === 'single' && (
+                            <div style={{}}>
+                                {tasks[activeTaskIndex].options.map((opt, index) => (
+                                        <div key={index} style={{display: 'flex', flexDirection:'row', gap:'10px'}}> 
+                                        {opt != '' && (<RadioButton 
+                                        checked={tasks[activeTaskIndex].correctRadioOption === opt}
+                                        onChange={() => handleRadioChange(opt)}
+                                        name={tasks[activeTaskIndex].id}
+                                        />)}
+                                        <StyledInput 
+                                            placeholder={`Вариант ${index + 1}`}
+                                            value={opt}
+                                            onChange={(e) => handleOptionChange(index, e.target.value)}
+                                        />
+                                        </div>
+                                        ))}
+                            </div>
+                        )}
 
-                            {tasks[activeTaskIndex].type === 'multiple' && (
-                                <div>
-
-                                </div>
-                            )}
-                        </div>
+                        {tasks[activeTaskIndex].type === 'multiple' && (
+                            <div style={{}}>
+                                {tasks[activeTaskIndex].options.map((opt, index) => (
+                                        <div key={index} style={{display: 'flex', flexDirection:'row', gap:'10px'}}> 
+                                        {opt != '' && (<CheckboxSquare 
+                                            checked={tasks[activeTaskIndex].correctBoxOptions.includes(opt)}
+                                            onChange={() => handleCheckboxChange(opt, tasks[activeTaskIndex].correctBoxOptions)}
+                                        />)}
+                                        <StyledInput 
+                                            placeholder={`Вариант ${index + 1}`}
+                                            value={opt}
+                                            onChange={(e) => handleOptionChange(index, e.target.value)}
+                                        />
+                                        </div>
+                                        ))}
+                            </div>
+                        )}
+                        
                     </div>
                 ) : (
                     <div style={{ color: '#888', textAlign: 'center', padding: '20px' }}>
@@ -246,6 +283,7 @@ export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
 
             {/* 5. Кнопки действий */}
             <div style={{
+                
                 display: 'flex', 
                 flexDirection: 'row', 
                 justifyContent: 'space-between',
