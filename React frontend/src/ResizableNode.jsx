@@ -60,8 +60,8 @@ const ResizableNode = ({ id, data, selected }) => {
   return (
     <Resizable
       size={size}
-      minWidth={200}
-      minHeight={150} 
+      minWidth={800}
+      minHeight={750} 
       style={resizeStyle}
       onResize={onResize}
       handleClasses={handleClasses}

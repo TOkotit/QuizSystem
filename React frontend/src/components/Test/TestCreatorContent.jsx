@@ -1,16 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyledInput, ActionButton } from '../Atoms'; // Убрал CheckboxSquare, если не используется
 
-export const TestCreatorContent = (onSave, onDataChange, initialData) => {
+export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
     // --- Общие параметры теста ---
-    const [title, setTitle] = useState('');
+    const [title, setTitle] = useState(initialData?.title || '');
     
     // Состояние для списка заданий и активного индекса
-    const [tasks, setTasks] = useState([]);
-    const [activeTaskIndex, setActiveTaskIndex] = useState(null);
+    const [tasks, setTasks] = useState(initialData?.tasks || []);
+    const [activeTaskIndex, setActiveTaskIndex] = useState(initialData?.activeTaskIndex ||null);
+
+    // Обновляем данные при изменении настроек
+      useEffect(() => {
+        onDataChange({title, tasks, activeTaskIndex});
+      }, [title, tasks, activeTaskIndex, onDataChange]);
 
     // Видимость настройки задания
-    const [taskSettingsVisibility, setTaskSettingsVisibility] = useState(false);
+    const [taskSettingsVisibility, setTaskSettingsVisibility] = useState(true);
 
 
     // Добавление нового задания
@@ -20,8 +25,11 @@ export const TestCreatorContent = (onSave, onDataChange, initialData) => {
             question: '',   // Текст вопроса
             type: 'text',   // Тип вопроса (по умолчанию) text/single/multiple
             score: 1,       // Баллы
+            correctText: '',
+            options: [''],
+            correctOptions: [],
         };
-
+        
         const newTasks = [...tasks, newTask];
         setTasks(newTasks);
         setActiveTaskIndex(newTasks.length - 1); // Переключаемся на только что созданное
@@ -52,6 +60,16 @@ export const TestCreatorContent = (onSave, onDataChange, initialData) => {
         }
     };
 
+    const handleOptionChange = (index, value) => {
+        let newOptions = [...tasks[activeTaskIndex].options];
+        newOptions[index] = value;
+        
+        const nonEmpties = newOptions.filter(opt => opt.trim() !== '');
+
+        const resultOptions = [...nonEmpties, ''];
+
+        updateActiveTask('options', resultOptions)
+    };
 
     // Стили
     const oneSettingStyle = { 
@@ -66,9 +84,9 @@ export const TestCreatorContent = (onSave, onDataChange, initialData) => {
     const taskTabStyle = (isActive) => ({
         padding: '8px',
         cursor: 'pointer',
-        backgroundColor: isActive ? '#ccc' : '#e0e0e0',
-        color: '#333',
-        border: '1px solid #ccc',
+        backgroundColor: isActive ? '#00a2ffff' : '#e0e0e0',
+        color: isActive ? '#ffffffff' : '#333',
+        
         borderRadius: '10px 10px 0 0',
         fontSize: '14px',
         fontWeight:'bold',
@@ -110,8 +128,7 @@ export const TestCreatorContent = (onSave, onDataChange, initialData) => {
                         Задание {index + 1}
                         <span 
                             onClick={(e) => handleDeleteTask(index, e)}
-                            style={{ fontSize: '10px', 
-                                color: 'red', 
+                            style={{ fontSize: '10px',
                                 fontWeight: 'bold' }}
                         >
                             ✕
@@ -182,6 +199,43 @@ export const TestCreatorContent = (onSave, onDataChange, initialData) => {
                                 />
                             </div>
                         </div>)}
+                        <div>
+                            {tasks[activeTaskIndex].type === 'text' && (
+                                <textarea
+                                value={tasks[activeTaskIndex].correctText}
+                                onChange={(e) => updateActiveTask('correctText', e.target.value)}
+                                style={{ 
+                                    width: '100%',
+                                    minHeight: '80px',
+                                    fontSize: '18px',
+                                    resize: 'vertical',
+                                    color: '#333',
+                                    backgroundColor: '#ebebebff' }}
+                                placeholder="Введите правильные варианты с разделением через ENTER"
+                            />
+                            )}
+
+                            {tasks[activeTaskIndex].type === 'single' && (
+                                <div>
+                                  {tasks[activeTaskIndex].options.map((opt, index) => (
+                                            <div key={index}> 
+                                            <StyledInput 
+                                              
+                                              placeholder={`Вариант ${index + 1}`}
+                                              value={opt}
+                                              onChange={(e) => handleOptionChange(index, e.target.value)}
+                                            />
+                                            </div>
+                                          ))}
+                                </div>
+                            )}
+
+                            {tasks[activeTaskIndex].type === 'multiple' && (
+                                <div>
+
+                                </div>
+                            )}
+                        </div>
                     </div>
                 ) : (
                     <div style={{ color: '#888', textAlign: 'center', padding: '20px' }}>
@@ -201,7 +255,7 @@ export const TestCreatorContent = (onSave, onDataChange, initialData) => {
                     + Добавить задание
                 </ActionButton>
 
-                <ActionButton onClick={() => console.log({ title, settings: { completionTime, endDate }, tasks })}
+                <ActionButton onClick={() => console.log('сохранение')}
                     style={{borderRadius:'10px'}}>
                     Сохранить тест
                 </ActionButton>

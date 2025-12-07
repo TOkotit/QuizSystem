@@ -5,11 +5,6 @@ import { TestSettingsContent } from './TestSettingsContent';
 // import { TestDisplayContent } from './TestDisplayContent'; 
 
 const TestWidget = ({initialTitle}) => {
-    // Состояние для хранения данных 
-    const [testCreationData, setTestCreationData] = useState({ 
-        title: initialTitle || '', 
-        options: [''] 
-    });
     // Состояние для хранения данных настроек всего теста
     const [testSettingsData, setTestSettingsData] = useState({
         completionTime: '',
@@ -17,6 +12,15 @@ const TestWidget = ({initialTitle}) => {
         endDate: '', 
         endTime: ''  
     });
+
+    // Состояние для списка заданий и активного индекса
+    const [testCreationData, setTestCreationData] = useState({
+        title: initialTitle || '',
+        tasks: [],
+        activeTaskIndex: '',
+    });
+
+
     // Состояние для отображений
     const [viewMode, setViewMode] = useState('creator'); 
 
@@ -55,24 +59,23 @@ const TestWidget = ({initialTitle}) => {
                 showMenuDots={viewMode === 'creator'} 
             >
                 {viewMode === 'creator' && (
-                <TestCreatorContent 
-                    onSave={handleSave} 
-                    onDataChange={setTestCreationData} 
-                    initialData={testCreationData} 
-                />
+                    <TestCreatorContent 
+                        onDataChange={setTestCreationData} 
+                        initialData={testCreationData} 
+                    />
                 )}
                 {viewMode === 'settings' && (
-                        <TestSettingsContent
-                            onDataChange={setTestSettingsData} 
-                            initialData={testSettingsData} 
-                            // Кнопка "Назад к опросу" в настройках ведет обратно в режим создания
-                            toggleSettings={handleSettingsBack} 
-                        />
-                      )}
+                    <TestSettingsContent
+                        onDataChange={setTestSettingsData} 
+                        initialData={testSettingsData} 
+                        // Кнопка "Назад к опросу" в настройках ведет обратно в режим создания
+                        toggleSettings={handleSettingsBack} 
+                    />
+                )}
                 {viewMode === 'display' && (
-                <TestDisplayContent 
+                    <TestDisplayContent 
 
-                />
+                    />
                 )}
         </BaseWidgetCard>
     );
