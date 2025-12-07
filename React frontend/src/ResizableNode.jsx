@@ -28,20 +28,20 @@ const ResizableNode = ({ id, data, selected }) => {
       setSize({ width, height }); 
       updateNodeInternals(id);
 
-      if (d.x !== 0 || d.y !== 0) {
-          setNodes((nds) => 
-              nds.map((node) => {
-                  if (node.id === id) {
-                      return {
-                          ...node,
-                          position: { x: node.position.x + d.x, y: node.position.y + d.y }, 
-                      };
-                  }
-                  return node;
-              })
-          );
-      }
-  }, [id, updateNodeInternals, setNodes]);
+      // if (d.x !== 0 || d.y !== 0) {
+      //     setNodes((nds) => 
+      //         nds.map((node) => {
+      //             if (node.id === id) {
+      //                 return {
+      //                     ...node,
+      //                     position: { x: node.position.x + d.x, y: node.position.y + d.y }, 
+      //                 };
+      //             }
+      //             return node;
+      //         })
+      //     );
+      // }
+  }, []);
 
   const onResize = useCallback(() => {}, []);
 
@@ -76,7 +76,6 @@ const ResizableNode = ({ id, data, selected }) => {
           bottomLeft: false, 
           topLeft: false 
       }}
-      className="nodrag"
       onPointerDown={(event) => event.stopPropagation()}
     >
       {/* Используем абсолютное позиционирование для контента */}
@@ -93,13 +92,13 @@ const ResizableNode = ({ id, data, selected }) => {
             boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)' 
         }}
       > 
-        <Handle type="source" position={Position.Right} id="a" style={{ top: '50%', opacity: 0, width: 10, height: 10 }} />
-        <Handle type="target" position={Position.Left} id="b" style={{ top: '50%', opacity: 0, width: 10, height: 10 }} />
-        
+
         {/* Основной виджет опроса */}
         {isAuthReady && <PollWidget initialTitle={data.label} />}
 
       </div>
+      <Handle type="source" position={Position.Left} />
+      <Handle type="target" position={Position.Top} />
     </Resizable>
   );
 };

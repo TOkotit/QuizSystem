@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyledInput, ActionButton } from './Atoms';
+import { StyledInput, ActionButton, CheckboxSquare } from './Atoms';
 
 // --- [3] ORGANISM: PollCreatorContent ---
 export const PollCreatorContent = ({ onSave, onDataChange, initialData }) => {

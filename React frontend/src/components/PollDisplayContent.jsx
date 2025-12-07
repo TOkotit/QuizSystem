@@ -1,18 +1,26 @@
-import React from 'react';
-import { ActionButton } from './Atoms';
+import React, {useState,} from 'react';
+import { ActionButton, CheckboxSquare, RadioButton } from './Atoms';
 
 export const PollDisplayContent = ({ pollData, toggleSettings }) => {
     // Деструктуризация данных, приходящих из PollWidget
     const { title, options, settings } = pollData;
-    const { isAnonymous, endDate, endTime } = settings;
+    const { isAnonymous, endDate, endTime, multipleAnswers } = settings;
 
     // Форматирование информации для заголовка
     const anonymityStatus = isAnonymous ? 'Анонимно' : 'Неанонимно';
     const displayEndDate = endDate ? `До ${endDate.split('-').reverse().join('.')}` : 'Нет даты'; // Формат DD.MM.YY
     const displayTime = endTime || ''; // Время, если есть
     
+
     // Имитация процента (пока всегда 0%)
     const getPercentage = () => "0%"; 
+
+
+    const [selectedOption, setSelectedOption] = useState();
+    
+    const handleChange = (event) => {
+        setSelectedOption(event.target.value);
+    };
 
     return (
         <div 
@@ -69,16 +77,15 @@ export const PollDisplayContent = ({ pollData, toggleSettings }) => {
                             marginBottom: '15px',
                             cursor: 'pointer', // Чтобы было ощущение интерактивности
                         }}
-                    >
-                        {/* Кружок (имитация радио-кнопки) */}
-                        <div style={{
-                            width: '24px',
-                            height: '24px',
-                            borderRadius: '50%',
-                            border: '2px solid #ccc',
-                            marginRight: '15px',
-                            flexShrink: 0
-                        }} />
+                    >   
+                        {multipleAnswers && <CheckboxSquare
+                            value= {optionText}
+                            />}
+                        {!multipleAnswers && <RadioButton
+                            name="myGroup" // Обязательно одно и то же имя для всех в группе
+                            value= {optionText}
+                            checked={selectedOption === optionText}
+                            onChange={handleChange} />}
                         
                         {/* Текст варианта и процент */}
                         <div style={{ 
@@ -86,12 +93,12 @@ export const PollDisplayContent = ({ pollData, toggleSettings }) => {
                             display: 'flex', 
                             justifyContent: 'space-between', 
                             alignItems: 'center',
-                            backgroundColor: '#e0e0e0', // Фон как на макете
+                            backgroundColor: '#e0e0e0', 
                             padding: '12px 16px',
                             fontSize: '16px',
                             color: '#333',
                             borderRadius: '0px',
-                            overflow: 'hidden', // Чтобы текст не вылезал
+                            overflow: 'hidden',
                         }}>
                             <span style={{ wordBreak: 'break-word', marginRight: '10px' }}>
                                 {optionText}
