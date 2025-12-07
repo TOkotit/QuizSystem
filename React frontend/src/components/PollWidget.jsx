@@ -50,8 +50,9 @@ const PollWidget = ({ initialTitle }) => {
       // Форматируем заголовок для режима отображения как на макете
       const anonymityStatus = pollSettingsData.isAnonymous ? 'Анонимно' : 'Неанонимно';
       // Формат даты DD.MM.YY
-      const displayEndDate = pollSettingsData.endDate ? `До ${pollSettingsData.endDate.split('-').reverse().join('.')}` : ''; 
-      return `Опрос - ${anonymityStatus} ${displayEndDate}`.trim();
+      const displayEndDate = pollSettingsData.endDate ? `До ${pollSettingsData.endDate.split('-').reverse().join('.')}` : '';
+      const displayEndTime = pollSettingsData.endTime ? ` ${pollSettingsData.endTime}` : '';
+      return `Опрос - ${anonymityStatus} ${displayEndDate}${displayEndTime}`.trim();
     }
     return "Опрос"; // Режим создания
   };
