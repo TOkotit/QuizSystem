@@ -2,7 +2,8 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Handle, Position, useUpdateNodeInternals, useReactFlow } from '@xyflow/react';
 import { Resizable } from 're-resizable';
 import { usePollsApi } from './hooks/usePollsApi'; 
-import PollWidget from './components/PollWidget'; 
+import PollWidget from './components/Poll/PollWidget'; 
+import TestWidget from './components/Test/TestWidget';
 
 // Стили для самого компонента Resizable
 const resizeStyle = {
@@ -89,12 +90,13 @@ const ResizableNode = ({ id, data, selected }) => {
             overflow: 'hidden', 
             outline: selected ? '2px solid #007bff' : 'none',
             borderRadius: '2px',
-            boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)' 
+            boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)',
+            
         }}
       > 
 
         {/* Основной виджет опроса */}
-        {isAuthReady && <PollWidget initialTitle={data.label} />}
+        {isAuthReady && <TestWidget initialTitle={data.label} />}
 
       </div>
       <Handle type="source" position={Position.Left} />

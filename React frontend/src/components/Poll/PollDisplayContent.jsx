@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ActionButton, CheckboxSquare, RadioButton } from './Atoms';
+import { ActionButton, CheckboxSquare, RadioButton } from '../Atoms';
 
 export const PollDisplayContent = ({ pollData, toggleSettings }) => {
     // Деструктуризация данных
