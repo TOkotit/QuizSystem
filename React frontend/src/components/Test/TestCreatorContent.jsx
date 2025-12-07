@@ -1,21 +1,17 @@
 import React, { useState } from 'react';
 import { StyledInput, ActionButton } from '../Atoms'; // Убрал CheckboxSquare, если не используется
 
-export const TestCreatorContent = () => {
+export const TestCreatorContent = (onSave, onDataChange, initialData) => {
     // --- Общие параметры теста ---
     const [title, setTitle] = useState('');
-    const [settingsVisibility, setSettingsVisibility] = useState(true);
-    
-    // Настройки теста
-    const [completionTime, setCompletionTime] = useState('');
-    const [endDate, setEndDate] = useState('');
-    const [endTime, setEndTime] = useState('');
-    const [attemptNumber, setAttemptNumber] = useState('');
-
     
     // Состояние для списка заданий и активного индекса
     const [tasks, setTasks] = useState([]);
     const [activeTaskIndex, setActiveTaskIndex] = useState(null);
+
+    // Видимость настройки задания
+    const [taskSettingsVisibility, setTaskSettingsVisibility] = useState(false);
+
 
     // Добавление нового задания
     const handleAddTask = () => {
@@ -63,7 +59,7 @@ export const TestCreatorContent = () => {
     };
     const dateTimeInputStyle = {
         boxSizing: 'border-box', padding: '10px', backgroundColor: '#e0e0e0',
-        border: 'none', fontSize: '14px', outline: 'none', color: '#333'
+        border: 'none', fontSize: '14px', outline: 'none', color: '#333', width: '100%'
     };
     
     // Стили для табов (вкладок) заданий
@@ -73,8 +69,9 @@ export const TestCreatorContent = () => {
         backgroundColor: isActive ? '#ccc' : '#e0e0e0',
         color: '#333',
         border: '1px solid #ccc',
-        borderRadius: '4px 4px 0 0',
+        borderRadius: '10px 10px 0 0',
         fontSize: '14px',
+        fontWeight:'bold',
         display: 'flex',
         alignItems: 'center',
         gap: '5px'
@@ -96,48 +93,10 @@ export const TestCreatorContent = () => {
                     onChange={(e) => setTitle(e.target.value)}
                     style={{ fontSize: '20px', 
                         fontWeight: 'bold', 
+                        borderRadius: '10px'
                         }}
                 />
             </div> 
-
-            {/* 2. Настройки теста (Сворачиваемые) */}
-            <div style={{ display:'flex',
-                    flexDirection:'column',
-                    gap: '10px',
-                    color:'#333',
-                    marginBottom:'20px'
-                }}>
-                <div 
-                    onClick={() => setSettingsVisibility(!settingsVisibility)} 
-                    style={{cursor: 'pointer', 
-                        fontWeight: 'bold', 
-                        }}
-                >
-                    <span>Параметры теста</span>
-                    <span>{settingsVisibility ? '▲' : '▼'}</span>
-                </div>
-                
-                {settingsVisibility && (
-                    <div style={{ display:'flex',
-                        flexDirection:'column',
-                        gap: '10px',
-                    }}>
-                        <div style={oneSettingStyle}>
-                            <span style={{ }}>Время (мин):</span>
-                            <input type="number" value={completionTime} onChange={(e) => setCompletionTime(e.target.value)} style={dateTimeInputStyle} />
-                        </div>
-                        <div style={oneSettingStyle}>
-                            <span style={{ }}>Пройти до</span>
-                            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={dateTimeInputStyle} />
-                            <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} style={dateTimeInputStyle} />
-                        </div>
-                        <div style={oneSettingStyle}>
-                            <span style={{ }}>Кол-во попыток:</span>
-                            <input type="number" value={attemptNumber} onChange={(e) => setAttemptNumber(e.target.value)} style={dateTimeInputStyle} />
-                        </div>
-                    </div>
-                )}
-            </div>
 
             {/* 3. НАВИГАЦИЯ ПО ЗАДАНИЯМ (ТАБЫ) */}
             <div style={{ display: 'flex', 
@@ -166,33 +125,42 @@ export const TestCreatorContent = () => {
                 padding:'10px',
                 marginBottom:'20px',
                 height:'100%',
-                color: '#333',
-                backgroundColor:'#b6f0ffff' }}>
+                color: '#333', }}>
                 {activeTaskIndex !== null && tasks[activeTaskIndex] ? (
                     <div style={{display: 'flex', 
                             flexDirection: 'column',
-                            gap: '10px' }}>
-                        <label style={{ 
-                            fontSize: '18px'
-                         }}>
-                                Вопрос:
-                        </label>
-                        <textarea
-                            value={tasks[activeTaskIndex].question}
-                            onChange={(e) => updateActiveTask('question', e.target.value)}
-                            style={{ 
-                                width: '100%',
-                                minHeight: '80px',
-                                fontSize: '18px',
-                                resize: 'vertical',
-                                backgroundColor: '#ebebebff' }}
-                            placeholder="Введите текст вопроса..."
-                        />
-                        
+                            gap: '10px', }}>
+
                         <div style={{ display: 'flex', 
                             flexDirection: 'column',
-                            gap: '10px' }}>
-                            <div style={{  }}>
+                            gap: '10px', }}>
+                            <label style={{fontSize: '18px',fontWeight:'bold',}}>Вопрос:</label>
+                            <textarea
+                                value={tasks[activeTaskIndex].question}
+                                onChange={(e) => updateActiveTask('question', e.target.value)}
+                                style={{ 
+                                    width: '100%',
+                                    minHeight: '80px',
+                                    fontSize: '18px',
+                                    resize: 'vertical',
+                                    color: '#333',
+                                    backgroundColor: '#ebebebff' }}
+                                placeholder="Введите текст вопроса..."
+                            />
+                        </div>
+                        <div 
+                            onClick={() => setTaskSettingsVisibility(!taskSettingsVisibility)} 
+                            style={{cursor: 'pointer', fontWeight: 'bold', marginBottom: '10px', display: 'flex'}}
+                        >
+                            <span>Параметры задания</span>
+                            <span>{taskSettingsVisibility ? '▲' : '▼'}</span>
+                        </div>
+                        {taskSettingsVisibility && (
+                            <div style={{ display: 'flex', 
+                            flexDirection: 'column',
+                            gap: '10px',
+                            width:'50%' }}>
+                            <div style={oneSettingStyle}>
                                 <span>Тип:</span>
                                 <select 
                                     value={tasks[activeTaskIndex].type}
@@ -204,7 +172,7 @@ export const TestCreatorContent = () => {
                                     <option value="multiple">Множ. выбор</option>
                                 </select>
                             </div>
-                            <div style={{  }}>
+                            <div style={oneSettingStyle}>
                                 <span>Баллы:</span>
                                 <input 
                                     type="number" 
@@ -213,7 +181,7 @@ export const TestCreatorContent = () => {
                                     style={dateTimeInputStyle} 
                                 />
                             </div>
-                        </div>
+                        </div>)}
                     </div>
                 ) : (
                     <div style={{ color: '#888', textAlign: 'center', padding: '20px' }}>
@@ -226,13 +194,15 @@ export const TestCreatorContent = () => {
             <div style={{
                 display: 'flex', 
                 flexDirection: 'row', 
-                justifyContent: 'space-between'
+                justifyContent: 'space-between',
                  }}>
-                <ActionButton onClick={handleAddTask}>
+                <ActionButton onClick={handleAddTask}
+                    style={{borderRadius:'10px'}}>
                     + Добавить задание
                 </ActionButton>
 
-                <ActionButton onClick={() => console.log({ title, settings: { completionTime, endDate }, tasks })}>
+                <ActionButton onClick={() => console.log({ title, settings: { completionTime, endDate }, tasks })}
+                    style={{borderRadius:'10px'}}>
                     Сохранить тест
                 </ActionButton>
             </div>
