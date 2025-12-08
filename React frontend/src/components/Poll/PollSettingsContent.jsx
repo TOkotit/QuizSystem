@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ToggleSwitch, ActionButton, CheckboxSquare } from './Atoms';
+import { ToggleSwitch, ActionButton, CheckboxSquare } from '../Atoms';
 
 // --- ORGANISM: PollSettingsContent ---
 export const PollSettingsContent = ({ onDataChange, initialData, toggleSettings }) => {
