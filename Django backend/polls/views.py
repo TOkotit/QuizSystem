@@ -10,7 +10,15 @@ from .serializers import (
     PollDetailSerializer,  # Создайте его, если нет: PollSerializer с Choices
     VoteSerializer
 )
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.http import JsonResponse
+from django.views.generic import TemplateView          # <--- НУЖЕН ДЛЯ ReactAppView
+from django.utils.decorators import method_decorator
 
+
+@ensure_csrf_cookie
+def get_csrf(request):
+    return JsonResponse({"detail": "CSRF cookie set"})
 
 # --- 1. ВЬЮХА ДЛЯ СОЗДАНИЯ И СПИСКА ОПРОСОВ (/polls/api/list/) ---
 class PollListCreateAPIView(generics.ListCreateAPIView):
@@ -74,3 +82,12 @@ class VoteCreateAPIView(generics.CreateAPIView):
 
         # Можно вернуть результаты голосования после успешного голоса
         # return Response(PollDetailSerializer(poll).data, status=status.HTTP_201_CREATED)
+
+@method_decorator(ensure_csrf_cookie, name='dispatch')
+class ReactAppView(TemplateView):
+    """
+    Эта View должна быть в корневом urls.py, если вы используете ее
+    для отдачи index.html в режиме production.
+    В режиме разработки (dev) она пока не нужна.
+    """
+    pass

@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { ActionButton, CheckboxSquare, RadioButton } from './Atoms';
-import { usePollsApi } from '../hooks/usePollsApi';
+import { ActionButton, CheckboxSquare, RadioButton } from '../Atoms';
+// import { usePollsApi } from '../hooks/usePollsApi';
 
 export const PollDisplayContent = ({ pollData, setPollData }) => {
     // Получаем данные напрямую из структуры Django Serializer

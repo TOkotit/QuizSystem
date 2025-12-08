@@ -8,20 +8,22 @@ import {
     Background,
     BackgroundVariant
 } from '@xyflow/react';
-import ResizableNode from './ResizableNode.jsx'; // Импортируем ваш кастомный узел
+import ResizableNode from './ResizableNode.jsx';
+import PollResizable from './PollResizable.jsx';
+import TestRisizable from './TestRisizable.jsx'; // Импортируем ваш кастомный узел
 import './App.css'; 
 
 // 1. Определяем начальные данные (пока для примера)
 const initialNodes = [
   { 
       id: '1', 
-      type: 'resizableNode', // Используйте тип вашего кастомного узла
+      type: 'testesizable', // Используйте тип вашего кастомного узла
       position: { x: 250, y: 5 }, 
       data: { label: 'Начальный узел' }, 
   },
   { 
       id: '2', 
-      type: 'resizableNode',
+      type: 'pollresizable',
       position: { x: 800, y: 5 }, 
       data: { label: 'Начальный узел2' }, 
   },
@@ -32,6 +34,8 @@ const initialEdges = [{ id: 'e1-2', source: '1', target: '2' }];
 // 2. Определяем карту кастомных узлов
 const nodeTypes = {
   resizableNode: ResizableNode,
+  testesizable: TestRisizable,
+  pollresizable: PollResizable,
 };
 
 // 3. Создаем главный компонент приложения

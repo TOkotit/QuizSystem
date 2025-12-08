@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from .serializers import PollCreateSerializer, VoteSerializer,  PollDetailSerializer
 from .models import Poll, Choice
+from django.db.models import F
 
 
 # View для создания нового опроса
@@ -15,6 +16,13 @@ class PollCreateAPIView(generics.CreateAPIView):
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
+class PollListAPIView(generics.ListAPIView):
+    """
+    Возвращает список активных опросов.
+    """
+    queryset = Poll.objects.filter(active=True).order_by('-pub_date')
+    serializer_class = PollDetailSerializer
+    permission_classes = [AllowAny]
 
 class PollDetailAPIView(generics.RetrieveAPIView):
     """

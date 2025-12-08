@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Poll, Choice, Vote
-from django.db import transaction
+from django.db import transaction, IntegrityError
+from django.utils import timezone
 
 
 # ----------------------------------------------------------------------
@@ -29,20 +30,16 @@ class PollCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         choices_data = validated_data.pop('choices')
 
-        if not choices_data or len(choices_data) < 2:
-            raise serializers.ValidationError({"choices": "Опрос должен содержать минимум два варианта ответа."})
+        if not choices_data or len(choices_data) < 1:
+            raise serializers.ValidationError({"choices": "Опрос должен содержать минимум один вариант ответа."})
 
         # В представлении (view) мы передадим сюда 'owner'
         owner = validated_data.pop('owner')
 
         with transaction.atomic():
-            # Создание опроса
             poll = Poll.objects.create(owner=owner, **validated_data)
-
-            # Создание вариантов ответов
             for choice_data in choices_data:
                 Choice.objects.create(poll=poll, **choice_data)
-
             return poll
 
 
