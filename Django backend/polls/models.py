@@ -8,7 +8,7 @@ import secrets
 class Poll(models.Model):
     # --- Оригинальные поля (для совместимости) ---
     owner = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, verbose_name="Создатель")
-    text = models.TextField(verbose_name="Название опроса") # Поле 'text' возвращено
+    title = models.TextField(verbose_name="Название опроса")
     pub_date = models.DateTimeField(default=timezone.now)
     active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
@@ -20,11 +20,10 @@ class Poll(models.Model):
     # --------------------------------------------
 
     def __str__(self):
-        return self.text
+        return self.title
 
     @property
-    def get_vote_count(self):
-        # Считает сумму голосов всех вариантов ответа этого опроса
+    def total_votes(self):
         return self.choices.aggregate(total=Sum('votes_count'))['total'] or 0
 
     def user_can_vote(self, user):
@@ -49,11 +48,6 @@ class Choice(models.Model):
     def __str__(self):
         return f"{self.poll.text[:25]} - {self.choice_text[:25]}"
 
-    @property
-    def get_vote_count(self):
-        # Просто возвращает поле votes_count, но нужен для унификации с сериализатором
-        return self.votes_count
-
 
 class Vote(models.Model):
     poll = models.ForeignKey(Poll, related_name='votes', on_delete=models.CASCADE)
@@ -63,4 +57,8 @@ class Vote(models.Model):
 
     def __str__(self):
         user_name = self.user.username if self.user else "Аноним"
-        return f"{user_name} voted in {self.poll.text}"
+        return f"{user_name} voted in {self.poll.title}"
+
+    class Meta:
+        verbose_name = "Голос"
+        verbose_name_plural = "Голоса"

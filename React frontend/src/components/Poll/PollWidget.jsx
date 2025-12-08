@@ -1,89 +1,125 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { BaseWidgetCard } from '../BaseWidgetCard';
 import { PollCreatorContent } from './PollCreatorContent';
 import { PollSettingsContent } from './PollSettingsContent';
-import { PollDisplayContent } from './PollDisplayContent'; 
+import { PollDisplayContent } from './PollDisplayContent';
 import { usePollsApi } from '../../hooks/usePollsApi';
 
 
-const PollWidget = ({ initialTitle, pollId }) => {
-  const [pollCreationData, setPollCreationData] = useState({ title: initialTitle || '', options: [''] });
-  const [pollSettingsData, setPollSettingsData] = useState({ isAnonymous: false, multipleAnswers: false, endDate: '', endTime: '' });
-  const [savedPollData, setSavedPollData] = useState(null);
-  const [viewMode, setViewMode] = useState('creator');
-    
-    // --- API: ПОДКЛЮЧЕНИЕ ХУКА ---
+const PollWidget = ({ initialTitle, pollId, onSaved }) => {
+    const [pollCreationData, setPollCreationData] = useState({ title: initialTitle || '', options: [''] });
+    const [pollSettingsData, setPollSettingsData] = useState({ isAnonymous: false, multipleAnswers: false, endDate: '', endTime: '' });
+    const [savedPollData, setSavedPollData] = useState(null);
+    const [viewMode, setViewMode] = useState('creator');
+
     const { createPoll, loading, error, fetchPoll } = usePollsApi();
 
     useEffect(() => {
         if (!pollId) return;
         let mounted = true;
+        
         (async () => {
-        try {
-            const serverPoll = await fetchPoll(pollId);
-            if (!mounted || !serverPoll) return;
-            setSavedPollData(serverPoll);
-            setViewMode('display');
-        } catch (e) {
-            console.error('Ошибка загрузки опроса:', e);
-        }
+            try {
+                const serverPoll = await fetchPoll(pollId);
+                if (!mounted || !serverPoll) return;
+
+                setSavedPollData(serverPoll);
+
+                const optionsFromDB = (serverPoll.choices || []).map(c => c.choice_text);
+
+                setPollCreationData({ 
+                    title: serverPoll.title, 
+                    options: [...optionsFromDB.filter(o => o.trim() !== ''), optionsFromDB.length > 0 ? '' : '']
+                });
+
+                let datePart = '';
+                let timePart = '';
+                if (serverPoll.end_date) {
+                    const parts = serverPoll.end_date.split('T');
+                    datePart = parts[0];
+                    timePart = parts[1] ? parts[1].substring(0, 5) : ''; 
+                }
+
+                setPollSettingsData({
+                    isAnonymous: serverPoll.is_anonymous,
+                    multipleAnswers: serverPoll.multiple_answers,
+                    endDate: datePart,
+                    endTime: timePart,
+                });
+
+                setViewMode('display');
+                
+            } catch (e) {
+                console.error('Ошибка загрузки опроса:', e);
+            }
         })();
         return () => { mounted = false; };
     }, [pollId, fetchPoll]);
 
     const handleSave = async () => {
-    const non_empty_options = pollCreationData.options.filter(o => o.trim() !== '');
-    if (!pollCreationData.title.trim() || non_empty_options.length < 1) {
-      alert("Min 1 option required");
-      return;
-    }
+        const non_empty_options = pollCreationData.options.filter(o => o.trim() !== '');
+        if (!pollCreationData.title.trim() || non_empty_options.length < 1) {
+            alert("Min 1 option required");
+            return;
+        }
 
         try {
-            console.log("Подготовка к createPoll, options:", non_empty_options);
-            console.log("document.cookie:", document.cookie);
-
-            // 1) Создаём опрос на сервере
-            const savedData = await createPoll(pollCreationData, pollSettingsData);         
-            // 2) Обновляем локальное состояние и переключаемся в display
+            const savedData = await createPoll(pollCreationData, pollSettingsData);         
+            
             setSavedPollData(savedData);
-            setViewMode('display');
 
-            // 3) Вызываем callback родителю (PollResizable), чтобы он записал pollId в node.data
             if (typeof onSaved === 'function') {
                 onSaved(savedData);
             }
-         } catch (e) {
+            
+            setViewMode('display');
+
+        } catch (e) {
             console.error('Ошибка сохранения опроса:', e);
             alert('Ошибка при сохранении опроса: ' + (e.message || e));
         }
     };
 
-    const toggleSettings = () => setViewMode((v) => v === 'creator' ? 'settings' : 'creator');
-    const handleSettingsBack = () => setViewMode('creator');
+    const toggleSettings = useCallback(() => setViewMode((v) => v === 'creator' ? 'settings' : 'creator'), []);
+    const handleSettingsBack = useCallback(() => setViewMode('creator'), []);
+    const toggleCreator = useCallback(() => setViewMode('creator'), []); 
 
     const getWidgetTitle = () => {
-        // Логика заголовка (опущена для краткости, без изменений)
         return "Опрос";
     };
 
     return (
-        <BaseWidgetCard title={getWidgetTitle()} toggleSettings={toggleSettings} showMenuDots={viewMode === 'creator'}>
-            {<p style={{color: 'red', textAlign: 'center'}}></p>}
+        <BaseWidgetCard 
+            title={getWidgetTitle()} 
+            toggleSettings={viewMode !== 'settings' ? toggleSettings : undefined}
+            showMenuDots={viewMode === 'creator'}
+            onTitleClick={viewMode === 'display' ? toggleCreator : undefined} 
+        > 
+            {<p style={{color: 'red', textAlign: 'center'}}>{loading ? 'Сохранение...' : error}</p>}
             
             {viewMode === 'creator' && (
-                <PollCreatorContent onSave={handleSave} onDataChange={setPollCreationData} initialData={pollCreationData} />
-            )}
-            {viewMode === 'settings' && (
-                <PollSettingsContent onDataChange={setPollSettingsData} initialData={pollSettingsData} toggleSettings={handleSettingsBack} />
-            )}
-            
-            {viewMode === 'display' && savedPollData && ( 
-                <PollDisplayContent 
-                    pollData={savedPollData} 
-                    setPollData={setSavedPollData} // --- API: ПЕРЕДАЕМ SETTER ДЛЯ ОБНОВЛЕНИЯ ПОСЛЕ ГОЛОСОВАНИЯ ---
-                    toggleSettings={toggleSettings}
+                <PollCreatorContent 
+                    onSave={handleSave} 
+                    onDataChange={setPollCreationData} 
+                    initialData={pollCreationData} 
                 />
             )}
+            
+            {viewMode === 'settings' && (
+                <PollSettingsContent 
+                    onDataChange={setPollSettingsData} 
+                    initialData={pollSettingsData} 
+                    toggleSettings={handleSettingsBack} 
+                />
+            )}
+            
+            {viewMode === 'display' && savedPollData && (
+                <PollDisplayContent 
+                    pollData={savedPollData} 
+                    setPollData={setSavedPollData} 
+                />
+            )}
+
         </BaseWidgetCard>
     );
 };

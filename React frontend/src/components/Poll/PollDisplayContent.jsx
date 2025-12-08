@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { ActionButton, CheckboxSquare, RadioButton } from '../Atoms';
-// import { usePollsApi } from '../hooks/usePollsApi';
+import { usePollsApi } from '../../hooks/usePollsApi';
 
 export const PollDisplayContent = ({ pollData, setPollData }) => {
     // Получаем данные напрямую из структуры Django Serializer
@@ -11,8 +11,8 @@ export const PollDisplayContent = ({ pollData, setPollData }) => {
         is_anonymous, 
         multiple_answers, 
         end_date,
-        total_votes // Общее кол-во голосов (нужно добавить в сериализатор на бэке)
-    } = pollData; 
+        total_votes // Общее кол-во голосов (приходит с бэкенда)
+    } = pollData;
 
     // --- API: ПОДКЛЮЧЕНИЕ ХУКА ---
     const { votePoll, loading, error, setError } = usePollsApi();
@@ -43,27 +43,44 @@ export const PollDisplayContent = ({ pollData, setPollData }) => {
 
     const handleVote = useCallback(async () => {
         setError(null);
-        let selectedIds = multiple_answers ? selectedCheckboxes : (selectedOption ? [selectedOption] : []);
+        let selectedIds = [];
+        if (multiple_answers) {
+            selectedIds = selectedCheckboxes;
+        } else if (selectedOption) {
+            selectedIds = [selectedOption];
+        }
 
-        if (selectedIds.length === 0) return;
+        if (selectedIds.length === 0) {
+            setError('Пожалуйста, выберите вариант ответа.');
+            return;
+        }
 
-        try {
+try {
             let updatedData = null;
-            // Отправляем голоса
-            for (const choiceId of selectedIds) {
-                // --- API: ВЫЗОВ ФУНКЦИИ ГОЛОСОВАНИЯ ---
-                updatedData = await votePoll(pollId, parseInt(choiceId));
+            
+            // Если одиночный выбор, отправляем только первый (и единственный) ID
+            if (!multiple_answers) {
+                updatedData = await votePoll(pollId, parseInt(selectedIds[0]));
+            } else {
+                // Если множественный выбор, отправляем голоса по одному
+                for (const choiceId of selectedIds) {
+                    updatedData = await votePoll(pollId, parseInt(choiceId));
+                }
             }
             
+            // Обновляем состояние родителя новыми данными с бэкенда 
             if (updatedData) {
-                // Обновляем состояние родителя новыми данными с бэкенда (чтобы обновились проценты)
                 setPollData(updatedData);
                 setIsSaved(true);
             }
         } catch (e) {
-            console.error(e);
+            console.error("Ошибка при голосовании:", e);
+            // Улучшенная обработка ошибки с бэкенда
+            setError(e.message || 'Неизвестная ошибка при отправке голоса.');
         }
-    }, [pollId, multiple_answers, selectedOption, selectedCheckboxes, votePoll, setPollData]);
+         }, [pollId, multiple_answers, selectedOption, selectedCheckboxes, votePoll, setPollData, setError]);
+
+         const isVoteDisabled = isSaved || loading || (!multiple_answers && !selectedOption) || (multiple_answers && selectedCheckboxes.length === 0);
 
     return (
         <div className="nodrag" style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflowY: 'auto', paddingRight: '5px' }} onWheel={(e) => e.stopPropagation()}>
@@ -103,7 +120,11 @@ export const PollDisplayContent = ({ pollData, setPollData }) => {
             </div>
 
             <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
-                <ActionButton onClick={handleVote} disabled={isSaved || loading} style={{ width: '100%', backgroundColor: isSaved ? '#5cb85c' : '#d9d9d9', borderRadius: "10px" }}>
+                <ActionButton 
+                    onClick={handleVote} 
+                    disabled={isVoteDisabled} // <-- ИЗМЕНЕНО: Используем переменную для логики отключения
+                    style={{ width: '100%', backgroundColor: isSaved ? '#5cb85c' : '#d9d9d9', borderRadius: "10px" }}
+                >
                     {loading ? 'Отправка...' : (isSaved ? 'Голос принят' : 'Сохранить')}
                 </ActionButton>
             </div>
