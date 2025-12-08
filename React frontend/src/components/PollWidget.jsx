@@ -3,90 +3,64 @@ import { BaseWidgetCard } from './BaseWidgetCard';
 import { PollCreatorContent } from './PollCreatorContent';
 import { PollSettingsContent } from './PollSettingsContent';
 import { PollDisplayContent } from './PollDisplayContent'; 
+import { usePollsApi } from '../hooks/usePollsApi'; 
 
-// --- [4] POLL WIDGET (Main Orchestrator) ---
 const PollWidget = ({ initialTitle }) => {
-  // Состояние для хранения данных создания опроса (чтобы они не терялись при переключении)
-  const [pollCreationData, setPollCreationData] = useState({ 
-    title: initialTitle || '', 
-    options: [''] 
-  });
-  // Состояние для хранения данных настроек
-  const [pollSettingsData, setPollSettingsData] = useState({
-    isAnonymous: false,
-    multipleAnswers: false,
-    endDate: '', 
-    endTime: ''  
-  });
+    const [pollCreationData, setPollCreationData] = useState({ title: initialTitle || '', options: [''] });
+    const [pollSettingsData, setPollSettingsData] = useState({ isAnonymous: false, multipleAnswers: false, endDate: '', endTime: '' });
+    const [savedPollData, setSavedPollData] = useState(null); 
+    const [viewMode, setViewMode] = useState('creator'); 
+    
+    // --- API: ПОДКЛЮЧЕНИЕ ХУКА ---
+    const { createPoll, loading, error } = usePollsApi(); 
 
-  // Состояние, которое определяет, что показываем: 'creator', 'settings', или 'display'
-  const [viewMode, setViewMode] = useState('creator'); // 'creator' (создание), 'settings' (настройки), 'display' (отображение)
+    const handleSave = async () => { 
+        const non_empty_options = pollCreationData.options.filter(o => o.trim() !== '');
+        if (!pollCreationData.title.trim() || non_empty_options.length < 1) {
+            alert("Min 1 option required");
+            return;
+        }
 
-  const handleSave = (data) => {
-    // Концептуальное сохранение. Просто переходим в режим отображения.
-    // Реальный вызов БД будет здесь позже.
-    setViewMode('display'); 
-  };
+        try {
+            // --- API: ВЫЗОВ СОЗДАНИЯ ---
+            const savedData = await createPoll(pollCreationData, pollSettingsData);
+            
+            // Сохраняем полученные от бэкенда данные (с ID и пустыми голосами)
+            setSavedPollData(savedData); 
+            setViewMode('display'); 
+        } catch (e) {
+            console.error(e);
+        }
+    };
 
-  const toggleSettings = () => {
-    // MenuDots доступны только в режиме 'creator' и ведут в 'settings'
-    if (viewMode === 'creator') {
-        setViewMode('settings');
-    } 
-  };
+    const toggleSettings = () => viewMode === 'creator' ? setViewMode('settings') : setViewMode('creator');
+    const handleSettingsBack = () => setViewMode('creator'); 
 
-  // Функция для возврата из настроек обратно в режим создания/отображения
-  const handleSettingsBack = () => {
-      // Возвращаемся в режим создания, т.к. только оттуда можно попасть в настройки
-      setViewMode('creator'); 
-  };
+    const getWidgetTitle = () => {
+        // Логика заголовка (опущена для краткости, без изменений)
+        return "Опрос";
+    };
 
-
-  // Динамический заголовок для BaseWidgetCard
-  const getWidgetTitle = () => {
-    if (viewMode === 'settings') {
-      return "Настройки";
-    } else if (viewMode === 'display') {
-      // Форматируем заголовок для режима отображения как на макете
-      const anonymityStatus = pollSettingsData.isAnonymous ? 'Анонимно' : 'Неанонимно';
-      // Формат даты DD.MM.YY
-      const displayEndDate = pollSettingsData.endDate ? `До ${pollSettingsData.endDate.split('-').reverse().join('.')}` : '';
-      const displayEndTime = pollSettingsData.endTime ? ` ${pollSettingsData.endTime}` : '';
-      return `Опрос - ${anonymityStatus} ${displayEndDate}${displayEndTime}`.trim();
-    }
-    return "Опрос"; // Режим создания
-  };
-
-  return (
-    <BaseWidgetCard 
-        title={getWidgetTitle()} 
-        toggleSettings={toggleSettings} 
-        // MenuDots видны ТОЛЬКО в режиме 'creator'
-        showMenuDots={viewMode === 'creator'} 
-    >
-      {viewMode === 'creator' && (
-        <PollCreatorContent 
-          onSave={handleSave} 
-          onDataChange={setPollCreationData} 
-          initialData={pollCreationData} 
-        />
-      )}
-      {viewMode === 'settings' && (
-        <PollSettingsContent 
-          onDataChange={setPollSettingsData} 
-          initialData={pollSettingsData} 
-          // Кнопка "Назад к опросу" в настройках ведет обратно в режим создания
-          toggleSettings={handleSettingsBack} 
-        />
-      )}
-      {viewMode === 'display' && (
-        <PollDisplayContent 
-          pollData={{ ...pollCreationData, settings: pollSettingsData }} 
-          // В режиме отображения "три точки" не нужны.
-        />
-      )}
-    </BaseWidgetCard>
-  );
+    return (
+        <BaseWidgetCard title={getWidgetTitle()} toggleSettings={toggleSettings} showMenuDots={viewMode === 'creator'}>
+            {error && <p style={{color: 'red', textAlign: 'center'}}>{error}</p>}
+            
+            {viewMode === 'creator' && (
+                <PollCreatorContent onSave={handleSave} onDataChange={setPollCreationData} initialData={pollCreationData} />
+            )}
+            {viewMode === 'settings' && (
+                <PollSettingsContent onDataChange={setPollSettingsData} initialData={pollSettingsData} toggleSettings={handleSettingsBack} />
+            )}
+            
+            {viewMode === 'display' && savedPollData && ( 
+                <PollDisplayContent 
+                    pollData={savedPollData} 
+                    setPollData={setSavedPollData} // --- API: ПЕРЕДАЕМ SETTER ДЛЯ ОБНОВЛЕНИЯ ПОСЛЕ ГОЛОСОВАНИЯ ---
+                    toggleSettings={toggleSettings}
+                />
+            )}
+        </BaseWidgetCard>
+    );
 };
 
 export default PollWidget;

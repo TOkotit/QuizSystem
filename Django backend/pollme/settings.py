@@ -38,6 +38,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "polls.apps.PollsConfig",
+    'rest_framework',
+    'corsheaders',
     # "accounts.apps.AccountsConfig", я пока снёс регистрацию, она пока не нужна  TODO: потом вернуть
 ]
 
@@ -49,15 +51,34 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    'corsheaders.middleware.CorsMiddleware',
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly'
+        # Разрешить чтение всем, но запись только аутентифицированным
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 10
+}
+
+CORS_ALLOW_ALL_ORIGINS = True
+
+# Для того, чтобы разрешить React передавать куки и CSRF-токен:
+CORS_ALLOW_CREDENTIALS = True
+
+# --- НАСТРОЙКА СТАТИКИ/TEMPLATES ДЛЯ REACT ---
+# Определяем путь к папке 'dist' после сборки React-проекта
+REACT_APP_DIR = os.path.join(BASE_DIR, '../React frontend/dist')
 
 ROOT_URLCONF = "pollme.urls"
 
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        'DIRS': [os.path.join(BASE_DIR, "Django backend", "templates")],
         "APP_DIRS": True,
+        'DIRS': [REACT_APP_DIR],
         "OPTIONS": {
             "context_processors": [
                 "django.template.context_processors.debug",
@@ -121,3 +142,15 @@ USE_TZ = True
 
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
+STATIC_URL = '/static/'
+
+# Необязательно, но полезно: если вы используете локальные статические файлы
+import os
+STATICFILES_DIRS = [
+    # Django будет искать статику (JS/CSS) тут
+    os.path.join(REACT_APP_DIR, 'assets'),
+]
+
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SECURE = False

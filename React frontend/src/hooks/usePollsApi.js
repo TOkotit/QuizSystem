@@ -1,61 +1,123 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 
-// Заглушка вместо реального API URL
-const API_BASE_URL = '/api/polls/'; 
+const API_BASE_URL = '/api/polls/';
 
-// --- ХУК ДЛЯ УПРАВЛЕНИЯ API ОПРОСОВ ---
+const getCsrfToken = () => {
+    const name = 'csrftoken';
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+};
+
 export const usePollsApi = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    // Имитируем, что аутентификация всегда готова
     const [isAuthReady, setIsAuthReady] = useState(true); 
 
+    const csrfToken = getCsrfToken();
 
-    // 3. МЕТОД: ПОЛУЧЕНИЕ ВСЕХ ОПРОСОВ (MOCK)
     const fetchAllPolls = useCallback(async () => {
         setLoading(true);
         setError(null);
-        
         try {
-            // Возвращаем тестовые данные
-            return [
-                { id: 1, text: "Опрос о качестве обслуживания клиентов" }, 
-                { id: 2, text: "Опрос о новых функциях продукта X" },
-                { id: 3, text: "Опрос об удовлетворенности работой" },
-            ];
+            // --- API: ЗАПРОС СПИСКА ОПРОСОВ ---
+            const response = await fetch(`${API_BASE_URL}list/`); 
+            if (!response.ok) throw new Error('Error fetching polls');
+            return await response.json();
         } catch (err) {
-            setError("Ошибка загрузки опросов");
+            setError(err.message);
             return [];
         } finally {
             setLoading(false);
         }
     }, []);
     
-    // 4. МЕТОД: СОЗДАНИЕ ОПРОСА (MOCK)
-    const createPoll = useCallback(async (pollData) => {
+    const createPoll = useCallback(async (pollData, pollSettings) => {
         setLoading(true);
         setError(null);
         
+        const choices = pollData.options
+            .filter(o => o.trim() !== '')
+            .map(text => ({ choice_text: text })); 
+        
+        const payload = {
+            title: pollData.title,
+            choices: choices,
+            is_anonymous: pollSettings.isAnonymous,
+            multiple_answers: pollSettings.multipleAnswers,
+            end_date: pollSettings.endDate ? `${pollSettings.endDate}T${pollSettings.endTime || '23:59'}:00Z` : null,
+        };
+        
+        if (!csrfToken) throw new Error("CSRF token missing");
+
         try {
-            console.log("MOCK API: Опрос создан с данными:", pollData);
+            // --- API: СОЗДАНИЕ ОПРОСА (POST) ---
+            const response = await fetch(`${API_BASE_URL}create/`, { 
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken, 
+                },
+                body: JSON.stringify(payload),
+            });
             
-            // Возвращаем объект, похожий на ответ реального API
-            return {
-                id: Math.floor(Math.random() * 1000),
-                title: pollData.title,
-                is_anonymous: pollData.settings.isAnonymous,
-                multiple_answers: pollData.settings.multipleAnswers,
-                end_date: pollData.settings.endDate,
-                created_at: new Date().toISOString(),
-                choices: pollData.options.map((text, index) => ({ id: index, text }))
-            };
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(JSON.stringify(err));
+            }
+
+            return await response.json(); 
+            
         } catch (err) {
-            setError("Не удалось создать опрос");
+            setError(err.message);
             throw err;
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [csrfToken]);
+
+    const votePoll = useCallback(async (pollId, choiceId) => {
+        setLoading(true);
+        setError(null);
+
+        if (!csrfToken) throw new Error("CSRF token missing");
+
+        try {
+            // --- API: ОТПРАВКА ГОЛОСА (POST) ---
+            // Отправляем ID опроса в URL и ID варианта в body
+            const response = await fetch(`${API_BASE_URL}${pollId}/vote/`, { 
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken, 
+                },
+                body: JSON.stringify({ choice_id: choiceId }), 
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(JSON.stringify(err));
+            }
+
+            // Бэкенд должен вернуть обновленный объект опроса с новыми голосами
+            return await response.json();
+
+        } catch (err) {
+            setError(err.message);
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    }, [csrfToken]);
 
 
     return {
@@ -65,5 +127,6 @@ export const usePollsApi = () => {
         setError, 
         fetchAllPolls,
         createPoll,
+        votePoll,
     };
 };
