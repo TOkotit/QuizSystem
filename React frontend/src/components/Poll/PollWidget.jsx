@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BaseWidgetCard } from './BaseWidgetCard';
+import { BaseWidgetCard } from '../BaseWidgetCard';
 import { PollCreatorContent } from './PollCreatorContent';
 import { PollSettingsContent } from './PollSettingsContent';
 import { PollDisplayContent } from './PollDisplayContent'; 

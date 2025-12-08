@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyledInput, ActionButton, CheckboxSquare } from './Atoms';
+import { StyledInput, ActionButton, CheckboxSquare } from '../Atoms';
 
-// --- [3] ORGANISM: PollCreatorContent ---
 export const PollCreatorContent = ({ onSave, onDataChange, initialData }) => {
   // Инициализация state. Убеждаемся, что options имеет хотя бы один пустой элемент
   const initialOptions = (initialData?.options && initialData.options.length > 0 && initialData.options.some(o => o.trim() === '')) 
