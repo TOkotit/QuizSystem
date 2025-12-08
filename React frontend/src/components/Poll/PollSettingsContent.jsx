@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ToggleSwitch, ActionButton } from './Atoms';
+import { ToggleSwitch, ActionButton, CheckboxSquare } from '../Atoms';
 
 // --- ORGANISM: PollSettingsContent ---
 export const PollSettingsContent = ({ onDataChange, initialData, toggleSettings }) => {
@@ -56,53 +56,51 @@ export const PollSettingsContent = ({ onDataChange, initialData, toggleSettings 
       </h3>
 
       {/* Анонимность */}
-      <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          marginBottom: '25px', 
-          flexShrink: 0 
-      }}>
-        <span style={{ fontSize: '18px', color: '#333' }}>Анонимность</span>
-        <ToggleSwitch checked={isAnonymous} onChange={() => setIsAnonymous(!isAnonymous)} />
-      </div>
-
-      {/* Несколько ответов */}
-      <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          marginBottom: '25px', 
-          flexShrink: 0 
-      }}>
-        <span style={{ fontSize: '18px', color: '#333' }}>Несколько ответов</span>
-        <ToggleSwitch checked={multipleAnswers} onChange={() => setMultipleAnswers(!multipleAnswers)} />
-      </div>
-
-      {/* Дата и время окончания (разделено на два поля) */}
-      <div style={{ flexShrink: 0 }}>
-        <span style={{ fontSize: '18px', color: '#333', marginBottom: '10px', display: 'block' }}>
-          Дата и время окончания
-        </span>
-        <div style={{ display: 'flex', gap: '10px' }}>
-            {/* Поле для выбора даты - type="date" */}
-            <input 
-                type="date" 
-                className="nodrag" 
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                style={dateTimeInputStyle}
-            />
-            {/* Поле для выбора времени - type="time" */}
-            <input 
-                type="time" 
-                className="nodrag" 
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                style={dateTimeInputStyle}
-            />
+        <div style={{ 
+            display: 'flex', 
+            gap: '10px',
+            alignItems: 'center', 
+            marginBottom: '25px', 
+        }}>
+          <CheckboxSquare checked={isAnonymous} onChange={() => setIsAnonymous(!isAnonymous)} />
+          <span style={{ fontSize: '18px', color: '#333' }}>Анонимность</span>
         </div>
-      </div>
+
+        {/* Несколько ответов */}
+        <div style={{ 
+            display: 'flex', 
+            gap: '10px',
+            alignItems: 'center', 
+            marginBottom: '25px', 
+        }}>
+          <CheckboxSquare checked={multipleAnswers} onChange={() => setMultipleAnswers(!multipleAnswers)} />
+          <span style={{ fontSize: '18px', color: '#333' }}>Несколько ответов</span>
+        </div>
+
+        {/* Дата и время окончания (разделено на два поля) */}
+        <div style={{ flexShrink: 0 }}>
+          <span style={{ fontSize: '18px', color: '#333', marginBottom: '10px', display: 'block' }}>
+            Дата и время окончания
+          </span>
+          <div style={{ display: 'flex', gap: '10px' }}>
+              {/* Поле для выбора даты - type="date" */}
+              <input 
+                  type="date" 
+                  className="nodrag" 
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  style={dateTimeInputStyle}
+              />
+              {/* Поле для выбора времени - type="time" */}
+              <input 
+                  type="time" 
+                  className="nodrag" 
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  style={dateTimeInputStyle}
+              />
+          </div>
+        </div>
 
       {/* Кнопка "Назад" для возврата к созданию опроса */}
       <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'flex-end', marginTop: 'auto', paddingTop: '20px' }}>

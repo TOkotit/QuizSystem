@@ -1,74 +1,70 @@
-import { useState, useCallback, useEffect } from 'react';
+import React, { useCallback } from 'react';
+import { 
+    ReactFlow, 
+    ReactFlowProvider, 
+    addEdge, 
+    useNodesState, 
+    useEdgesState,
+    Background,
+    BackgroundVariant
+} from '@xyflow/react';
+import ResizableNode from './ResizableNode.jsx'; // Импортируем ваш кастомный узел
+import './App.css'; 
 
-// Заглушка вместо реального API URL
-const API_BASE_URL = '/api/polls/'; 
+// 1. Определяем начальные данные (пока для примера)
+const initialNodes = [
+  { 
+      id: '1', 
+      type: 'resizableNode', // Используйте тип вашего кастомного узла
+      position: { x: 250, y: 5 }, 
+      data: { label: 'Начальный узел' }, 
+  },
+  { 
+      id: '2', 
+      type: 'resizableNode',
+      position: { x: 800, y: 5 }, 
+      data: { label: 'Начальный узел2' }, 
+  },
+];
 
-// --- ХУК ДЛЯ УПРАВЛЕНИЯ API ОПРОСОВ ---
-export const usePollsApi = () => {
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-    // Имитируем, что аутентификация всегда готова
-    const [isAuthReady, setIsAuthReady] = useState(true); 
+const initialEdges = [{ id: 'e1-2', source: '1', target: '2' }];
 
-    // Имитация задержки сети
-    const mockDelay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-    // 3. МЕТОД: ПОЛУЧЕНИЕ ВСЕХ ОПРОСОВ (MOCK)
-    const fetchAllPolls = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        
-        try {
-            await mockDelay(500); // Имитация загрузки
-            // Возвращаем тестовые данные
-            return [
-                { id: 1, text: "Опрос о качестве обслуживания клиентов" }, 
-                { id: 2, text: "Опрос о новых функциях продукта X" },
-                { id: 3, text: "Опрос об удовлетворенности работой" },
-            ];
-        } catch (err) {
-            setError("Ошибка загрузки опросов");
-            return [];
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-    
-    // 4. МЕТОД: СОЗДАНИЕ ОПРОСА (MOCK)
-    const createPoll = useCallback(async (pollData) => {
-        setLoading(true);
-        setError(null);
-        
-        try {
-            await mockDelay(1000); // Имитация сохранения
-            console.log("MOCK API: Опрос создан с данными:", pollData);
-            
-            // Возвращаем объект, похожий на ответ реального API
-            return {
-                id: Math.floor(Math.random() * 1000),
-                title: pollData.title,
-                is_anonymous: pollData.settings.isAnonymous,
-                multiple_answers: pollData.settings.multipleAnswers,
-                end_date: pollData.settings.endDate,
-                created_at: new Date().toISOString(),
-                choices: pollData.options.map((text, index) => ({ id: index, text }))
-            };
-        } catch (err) {
-            setError("Не удалось создать опрос");
-            throw err;
-        } finally {
-            setLoading(false);
-        }
-
-    }, []);
-
-
-    return {
-        isAuthReady,
-        loading,
-        error,
-        setError, 
-        fetchAllPolls,
-        createPoll,
-    };
+// 2. Определяем карту кастомных узлов
+const nodeTypes = {
+  resizableNode: ResizableNode,
 };
+
+// 3. Создаем главный компонент приложения
+function App() {
+    // Используем хуки для управления состоянием узлов и ребер
+    const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+    const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+    // Функция для создания соединения (ребра)
+    const onConnect = useCallback(
+        (params) => setEdges((eds) => addEdge(params, eds)),
+        [setEdges],
+    );
+
+    return (
+        // ReactFlowProvider необходим, если вы используете хуки (например, useReactFlow) внутри потомков
+        <ReactFlowProvider>
+            <div style={{ width: '100vw', height: '100vh'}}>
+                <ReactFlow
+                    nodes={nodes}
+                    edges={edges}
+                    onNodesChange={onNodesChange}
+                    onEdgesChange={onEdgesChange}
+                    onConnect={onConnect}
+                    nodeTypes={nodeTypes} // Передаем кастомные узлы
+                >
+                    {/* Здесь могут быть MiniMap, Controls и т.д. */}
+                    <Background variant={BackgroundVariant.Dots} gap={12} size={1} bgColor='white'/>
+                </ReactFlow>
+            </div>
+        </ReactFlowProvider>
+    );
+}
+
+// 4. Обязательный default экспорт!
+export default App;

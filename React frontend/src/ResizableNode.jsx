@@ -2,7 +2,8 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Handle, Position, useUpdateNodeInternals, useReactFlow } from '@xyflow/react';
 import { Resizable } from 're-resizable';
 import { usePollsApi } from './hooks/usePollsApi'; 
-import PollWidget from './components/PollWidget'; 
+import PollWidget from './components/Poll/PollWidget'; 
+import TestWidget from './components/Test/TestWidget';
 
 // Стили для самого компонента Resizable
 const resizeStyle = {
@@ -28,20 +29,20 @@ const ResizableNode = ({ id, data, selected }) => {
       setSize({ width, height }); 
       updateNodeInternals(id);
 
-      if (d.x !== 0 || d.y !== 0) {
-          setNodes((nds) => 
-              nds.map((node) => {
-                  if (node.id === id) {
-                      return {
-                          ...node,
-                          position: { x: node.position.x + d.x, y: node.position.y + d.y }, 
-                      };
-                  }
-                  return node;
-              })
-          );
-      }
-  }, [id, updateNodeInternals, setNodes]);
+      // if (d.x !== 0 || d.y !== 0) {
+      //     setNodes((nds) => 
+      //         nds.map((node) => {
+      //             if (node.id === id) {
+      //                 return {
+      //                     ...node,
+      //                     position: { x: node.position.x + d.x, y: node.position.y + d.y }, 
+      //                 };
+      //             }
+      //             return node;
+      //         })
+      //     );
+      // }
+  }, []);
 
   const onResize = useCallback(() => {}, []);
 
@@ -59,8 +60,8 @@ const ResizableNode = ({ id, data, selected }) => {
   return (
     <Resizable
       size={size}
-      minWidth={200}
-      minHeight={150} 
+      minWidth={800}
+      minHeight={750} 
       style={resizeStyle}
       onResize={onResize}
       handleClasses={handleClasses}
@@ -76,7 +77,6 @@ const ResizableNode = ({ id, data, selected }) => {
           bottomLeft: false, 
           topLeft: false 
       }}
-      className="nodrag"
       onPointerDown={(event) => event.stopPropagation()}
     >
       {/* Используем абсолютное позиционирование для контента */}
@@ -90,16 +90,17 @@ const ResizableNode = ({ id, data, selected }) => {
             overflow: 'hidden', 
             outline: selected ? '2px solid #007bff' : 'none',
             borderRadius: '2px',
-            boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)' 
+            boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)',
+            
         }}
       > 
-        <Handle type="source" position={Position.Right} id="a" style={{ top: '50%', opacity: 0, width: 10, height: 10 }} />
-        <Handle type="target" position={Position.Left} id="b" style={{ top: '50%', opacity: 0, width: 10, height: 10 }} />
-        
+
         {/* Основной виджет опроса */}
-        {isAuthReady && <PollWidget initialTitle={data.label} />}
+        {isAuthReady && <TestWidget initialTitle={data.label} />}
 
       </div>
+      <Handle type="source" position={Position.Left} />
+      <Handle type="target" position={Position.Top} />
     </Resizable>
   );
 };

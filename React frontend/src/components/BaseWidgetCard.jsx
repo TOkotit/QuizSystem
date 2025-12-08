@@ -9,7 +9,6 @@ export const BaseWidgetCard = ({ title, children, style, toggleSettings, showMen
         width: '100%',
         height: '100%',
         backgroundColor: '#fff',
-        borderLeft: '5px solid #007bff',
         padding: '20px 24px',
         display: 'flex',
         flexDirection: 'column',

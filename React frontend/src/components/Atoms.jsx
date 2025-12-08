@@ -78,6 +78,61 @@ export const ToggleSwitch = ({ checked, onChange }) => (
     </span>
   </label>
 );
+// Переключатель с галочкой как в фигме
+export const CheckboxSquare = ({ checked, onChange }) => (
+  <label
+    style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      cursor: 'pointer',
+      userSelect: 'none',
+      position: 'relative',
+    }}
+  >
+    <input
+      type="checkbox"
+      checked={checked}
+      onChange={onChange}
+      style={{
+        opacity: 0,
+        width: 0,
+        height: 0,
+        position: 'absolute',
+      }}
+    />
+    <span
+      style={{
+        display: 'inline-block',
+        width: '24px', 
+        height: '24px',
+        border: `2px solid ${checked ? '#007bff' : '#6c757d'}`, 
+        borderRadius: '4px', 
+        backgroundColor: checked ? '#007bff' : '#fff', 
+        transition: 'background-color 0.2s, border-color 0.2s',
+        position: 'relative',
+        flexShrink: 0,
+      }}
+    >
+      {checked && (
+        <span
+          style={{
+            content: '""',
+            position: 'absolute',
+            left: '8px', 
+            top: '3px',  
+            width: '6px',
+            height: '14px',
+            border: 'solid white', 
+            borderWidth: '0 3px 3px 0',
+            transform: 'rotate(45deg)',
+            transition: 'opacity 0.2s',
+            opacity: checked ? 1 : 0,
+          }}
+        />
+      )}
+    </span>
+  </label>
+);
 
 // --- [4] ATOM: MenuDots ---
 export const MenuDots = ({ onClick }) => (
@@ -104,4 +159,75 @@ export const MenuDots = ({ onClick }) => (
       />
     ))}
   </div>
+);
+
+/**
+ * @param {string} id - Уникальный ID для связи input и label.
+ * @param {string} name - Имя группы radio-кнопок (обязательно для правильной работы).
+ * @param {string} value - Значение этой радиокнопки.
+ * @param {boolean} checked - Указывает, выбрана ли кнопка.
+ * @param {function} onChange - Обработчик изменения.
+ */
+export const RadioButton = ({ id, name, value, checked, onChange, children }) => (
+  <label
+    htmlFor={id}
+    style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      cursor: 'pointer',
+      userSelect: 'none',
+    }}
+  >
+    {/* Скрытый нативный элемент radio */}
+    <input
+      id={id}
+      type="radio"
+      name={name}
+      value={value}
+      checked={checked}
+      onChange={onChange}
+      style={{
+        // Полностью скрываем нативный вид, но оставляем функциональность
+        opacity: 0,
+        width: 0,
+        height: 0,
+        position: 'absolute',
+      }}
+    />
+    
+    {/* Кастомный круглый индикатор */}
+    <span
+      style={{
+        display: 'inline-block',
+        width: '20px',
+        height: '20px',
+        borderRadius: '50%', // Делает его круглым
+        border: `2px solid ${checked ? '#007bff' : '#6c757d'}`, // Синяя рамка при checked
+        backgroundColor: '#fff',
+        position: 'relative',
+        flexShrink: 0,
+        transition: 'border-color 0.2s',
+      }}
+    >
+      {/* Внутренняя точка, которая появляется при выборе */}
+      {checked && (
+        <span
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '10px', // Размер внутренней точки
+            height: '10px',
+            borderRadius: '50%',
+            backgroundColor: '#007bff', // Синяя внутренняя точка
+            transition: 'opacity 0.2s',
+            opacity: 1,
+          }}
+        />
+      )}
+    </span>
+    {/* Текст/содержимое рядом с кнопкой */}
+    {children}
+  </label>
 );
