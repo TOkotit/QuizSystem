@@ -1,153 +1,125 @@
+# polls/serializers.py
 from rest_framework import serializers
-from .models import Poll, Choice, Vote
-from django.db import IntegrityError, transaction
+from .models import Poll, Choice, Vote, User  # Предполагаем, что User импортирован или доступен
+from django.db import transaction, models  # Импорт models для F-выражения
+from django.utils import timezone
 
 
 # ----------------------------------------------------------------------
-# 1. Сериализаторы для создания/редактирования опроса
+# 1. СЕРИАЛИЗАТОРЫ ДЛЯ ОТОБРАЖЕНИЯ (Poll Detail & List)
 # ----------------------------------------------------------------------
 
-class ChoiceCreateSerializer(serializers.ModelSerializer):
-    """
-    Используется для приема списка вариантов ответов при создании нового опроса.
-    """
-
+# 1.1. ChoiceDetailSerializer: для вывода вариантов ответа в Poll
+class ChoiceDetailSerializer(serializers.ModelSerializer):
+    # votes_count берется напрямую из поля-кэша модели Choice
     class Meta:
         model = Choice
-        # Нам нужно только поле 'text' для создания, poll_id будет установлен в create() PollSerializer'а.
-        fields = ('text',)
+        fields = ('id', 'choice_text', 'votes_count')
 
 
-class PollCreateSerializer(serializers.ModelSerializer):
-    """
-    Используется для создания нового опроса вместе с его вариантами ответов (Choices).
-    """
-    # Вложенный сериализатор: при создании опроса ожидается список объектов choices.
-    choices = ChoiceCreateSerializer(many=True)
+# 1.2. PollDetailSerializer: для GET-запроса (просмотр деталей и результатов)
+class PollDetailSerializer(serializers.ModelSerializer):
+    choices = ChoiceDetailSerializer(many=True, read_only=True)
+    total_votes = serializers.IntegerField(read_only=True)  # Берется из @property модели
 
-    class Meta:
-        model = Poll
-        # 'creator' будет установлен в представлении (view) через request.user
-        fields = ('id', 'title', 'is_anonymous', 'multiple_answers', 'end_date', 'choices')
-        read_only_fields = ('id',)
-
-    def create(self, validated_data):
-        # Извлекаем данные вложенных вариантов ответов
-        choices_data = validated_data.pop('choices')
-
-        if not choices_data:
-            raise serializers.ValidationError({"choices": "Опрос должен содержать хотя бы один вариант ответа."})
-
-        # Создаем объект Poll (Poll object must be created first to get the ID)
-        with transaction.atomic():
-            poll = Poll.objects.create(**validated_data)
-
-            # Создаем все варианты ответов, связывая их с только что созданным опросом
-            for choice_data in choices_data:
-                # В Django `unique_together` в модели Choice предотвратит дублирование текста в рамках одного опроса.
-                Choice.objects.create(poll=poll, **choice_data)
-
-        return poll
-
-
-# ----------------------------------------------------------------------
-# 2. Сериализаторы для отображения опроса и результатов
-# ----------------------------------------------------------------------
-
-class PollDisplayChoiceSerializer(serializers.ModelSerializer):
-    """
-    Используется для отображения вариантов ответа с подсчетом голосов.
-    """
-    # Добавляем read_only поле для подсчета голосов
-    vote_count = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Choice
-        fields = ('id', 'text', 'vote_count')
-        # Все поля только для чтения в режиме отображения
-        read_only_fields = ('id', 'text', 'vote_count')
-
-    # Метод для подсчета голосов для каждого варианта
-    def get_vote_count(self, obj):
-        # obj здесь — это объект Choice. Используем related_name 'votes' из модели Vote.
-        return obj.votes.count()
-
-
-class PollDisplaySerializer(serializers.ModelSerializer):
-    """
-    Используется для отображения полного опроса, включая результаты и статус голосования пользователя.
-    """
-    # Вложенный сериализатор: отображаем варианты ответов с голосами
-    choices = PollDisplayChoiceSerializer(many=True, read_only=True)
-
-    # Флаг, указывающий, проголосовал ли текущий пользователь
-    has_voted = serializers.SerializerMethodField()
-
-    # Поле для отображения имени создателя
-    creator_username = serializers.CharField(source='creator.username', read_only=True)
+    # Дополнительные поля для фронтенда
+    owner_username = serializers.CharField(source='owner.username', read_only=True)
+    is_active = serializers.SerializerMethodField()
 
     class Meta:
         model = Poll
         fields = (
-            'id',
-            'creator',
-            'creator_username',
-            'title',
-            'is_anonymous',
-            'multiple_answers',
-            'end_date',
-            'created_at',
-            'choices',
-            'has_voted'
+            'id', 'title', 'is_anonymous', 'multiple_answers', 'end_date',
+            'created_at', 'owner_username', 'choices', 'total_votes', 'is_active'
         )
-        # Все поля только для чтения, так как это режим отображения/результатов
-        read_only_fields = fields
+        read_only_fields = fields  # Все поля только для чтения
 
-        # Проверяем, проголосовал ли текущий пользователь
-
-    def get_has_voted(self, obj):
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            # obj — это объект Poll. Проверяем, есть ли голоса от этого пользователя.
-            return obj.votes.filter(user=request.user).exists()
-        return False
+    def get_is_active(self, obj):
+        # Проверка: опрос активен (active=True) и дата окончания не наступила
+        return obj.active and (obj.end_date is None or obj.end_date > timezone.now())
 
 
 # ----------------------------------------------------------------------
-# 3. Сериализатор для записи голоса
+# 2. СЕРИАЛИЗАТОРЫ ДЛЯ СОЗДАНИЯ (Poll Create)
 # ----------------------------------------------------------------------
 
+# 2.1. ChoiceCreateSerializer: для приема текста варианта при создании опроса
+class ChoiceCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Choice
+        fields = ('choice_text',)
+
+
+# 2.2. PollCreateSerializer: для POST-запроса (создание опроса)
+class PollCreateSerializer(serializers.ModelSerializer):
+    choices = ChoiceCreateSerializer(many=True)  # Принимает список вариантов
+
+    class Meta:
+        model = Poll
+        fields = ('id', 'title', 'is_anonymous', 'multiple_answers', 'end_date', 'choices')
+        read_only_fields = ('id',)
+
+    def create(self, validated_data):
+        choices_data = validated_data.pop('choices')
+
+        # Валидация: минимум один вариант ответа
+        if not choices_data or len(choices_data) < 1:
+            raise serializers.ValidationError({"choices": "Опрос должен содержать минимум один вариант ответа."})
+
+        # Атомарная транзакция: либо создаем все, либо откатываем изменения
+        with transaction.atomic():
+            # owner должен быть передан в validated_data или context из View
+            poll = Poll.objects.create(**validated_data)
+
+            # Оптимизированное создание вариантов через bulk_create
+            choices_to_create = [
+                Choice(poll=poll, **choice_data)
+                for choice_data in choices_data
+            ]
+            Choice.objects.bulk_create(choices_to_create)
+
+            return poll
+
+
+# ----------------------------------------------------------------------
+# 3. СЕРИАЛИЗАТОР ДЛЯ ГОЛОСОВАНИЯ (Vote)
+# ----------------------------------------------------------------------
+
+# 3.1. VoteSerializer: для POST-запроса (голосование)
 class VoteSerializer(serializers.ModelSerializer):
-    """
-    Используется для приема ID варианта ответа при голосовании.
-    """
-    # Принимаем только ID варианта ответа от клиента
-    choice_id = serializers.IntegerField(write_only=True)
+    choice_id = serializers.IntegerField(write_only=True)  # Принимаем ID выбранного варианта
 
     class Meta:
         model = Vote
         fields = ('choice_id',)
-        # user и poll будут установлены в представлении (view)
-        # Не включаем поля user, poll и choice, так как они будут установлены в create()
 
     def create(self, validated_data):
-        # В представлении мы передадим сюда `user` и `poll`
-        user = validated_data.pop('user')
+        # Параметры должны быть переданы в validated_data или context из View
+        user = validated_data.pop('user', None)
         poll = validated_data.pop('poll')
         choice_id = validated_data.pop('choice_id')
 
-        # Проверяем, существует ли вариант ответа и принадлежит ли он текущему опросу
+        # 1. Проверка существования варианта и его принадлежности к опросу
         try:
             choice = Choice.objects.get(id=choice_id, poll=poll)
         except Choice.DoesNotExist:
             raise serializers.ValidationError({"choice_id": "Указанный вариант ответа не принадлежит этому опросу."})
 
-        # Создаем голос. Уникальное ограничение unique_together в модели Vote
-        # обеспечит невозможность проголосовать за одну и ту же опцию дважды
-        # (или за любую опцию, если multiple_answers=False, это проверит View).
+        # 2. Проверка на повторное голосование (если множественный выбор запрещен)
+        if user and not poll.multiple_answers and Vote.objects.filter(user=user, poll=poll).exists():
+            raise serializers.ValidationError(
+                {"non_field_errors": "Вы уже голосовали в этом опросе, и он не допускает множественного выбора."})
+
+        # 3. Создание голоса и обновление кэша
         try:
-            return Vote.objects.create(user=user, poll=poll, choice=choice)
+            with transaction.atomic():
+                # Создаем запись о голосе
+                vote = Vote.objects.create(user=user, poll=poll, choice=choice)
+
+                # Атомарное увеличение кэшированного счетчика голосов (оптимизация)
+                Choice.objects.filter(id=choice.id).update(votes_count=models.F('votes_count') + 1)
+
+                return vote
         except IntegrityError:
-            # Это может произойти, если пользователь пытается проголосовать дважды
-            # за один и тот же вариант или дважды в опросе без multiple_answers
-            raise serializers.ValidationError({"error": "Вы уже проголосовали в этом опросе или выбрали этот вариант."})
+            raise serializers.ValidationError(
+                {"non_field_errors": "Не удалось сохранить голос из-за ошибки транзакции."})

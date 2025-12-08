@@ -1,7 +1,8 @@
-"""pollme URL Configuration
+"""
+URL configuration for quiz_project project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/2.1/topics/http/urls/
+    https://docs.djangoproject.com/en/4.2/topics/http/urls/
 Examples:
 Function views
     1. Add an import:  from my_app import views
@@ -15,14 +16,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from . import views
-
-
-admin.site.site_header = 'QuizWidget System'
-admin.site.site_title = 'QuizWidget Admin'
+from polls.views import set_csrf_cookie
 
 urlpatterns = [
-    path('', include('polls.urls', namespace="polls")),
     path('admin/', admin.site.urls),
-    # path('accounts/', include('accounts.urls', namespace="accounts")), TODO: как понадобиться регистрация - вернуть
+    path('api/polls/', include('polls.urls')),
+    path('api/csrf/', set_csrf_cookie, name='api_csrf_set'),
 ]

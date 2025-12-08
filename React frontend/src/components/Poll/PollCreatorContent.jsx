@@ -5,38 +5,51 @@ export const PollCreatorContent = ({ onSave, onDataChange, initialData }) => {
   // Инициализация state. Убеждаемся, что options имеет хотя бы один пустой элемент
   const initialOptions = (initialData?.options && initialData.options.length > 0 && initialData.options.some(o => o.trim() === '')) 
     ? initialData.options
-    : [...(initialData?.options?.filter(o => o.trim() !== '') || []), '']; // Add an empty one if none exists or options is empty/null
+    : [...(initialData?.options?.filter(o => o.trim() !== '') || []), '']; 
 
   const [title, setTitle] = useState(initialData?.title || '');
   const [options, setOptions] = useState(initialOptions);
   const optionsEndRef = useRef(null);
 
-  // Обновляем данные для родителя при изменении title или options
+  // Обновляем данные для родителя (ПРОМЕЖУТОЧНОЕ СОХРАНЕНИЕ в state PollWidget)
   useEffect(() => {
-    // Pass only non-empty options to the parent component
+    // Отправляем только непустые опции, чтобы родитель мог их передать в API
     onDataChange({ title, options: options.filter(o => o.trim() !== '') });
   }, [title, options, onDataChange]);
-
+ 
   // --- ЛОГИКА ИЗМЕНЕНИЯ ОПЦИИ И УПРАВЛЕНИЯ СПИСКОМ ---
   const handleOptionChange = (index, value) => {
     let newOptions = [...options];
     newOptions[index] = value;
     
-    // 1. Извлекаем все непустые варианты из обновленного списка.
-    const nonEmpties = newOptions.filter(opt => opt.trim() !== '');
+    // Если мы ввели текст в последний пустой элемент, добавляем еще один пустой
+    if (index === newOptions.length - 1 && value.trim() !== '') {
+      newOptions.push('');
+    }
+    
+    // Удаляем пустые элементы, кроме последнего
+    newOptions = newOptions.filter((opt, i) => opt.trim() !== '' || i === newOptions.length - 1);
 
-    // 2. Формируем новый список: (Все непустые варианты) + (Ровно один пустой вариант-плейсхолдер).
-    // This logic ensures we always have one blank line for new input, and remove others if they become blank.
-    const resultOptions = [...nonEmpties, ''];
-
-    // 3. Обновляем state.
-    setOptions(resultOptions);
+    setOptions(newOptions);
   };
 
+  // Удаление опции
+  const handleRemoveOption = (indexToRemove) => {
+    // Удаляем опцию по индексу, сохраняя последний пустой элемент, если он есть
+    setOptions(prevOptions => {
+        const filteredOptions = prevOptions.filter((_, index) => index !== indexToRemove);
+        // Убеждаемся, что всегда есть пустой элемент для добавления
+        if (filteredOptions.length === 0 || filteredOptions[filteredOptions.length - 1].trim() !== '') {
+            return [...filteredOptions, ''];
+        }
+        return filteredOptions;
+    });
+  };
+
+  // Прокрутка вниз при добавлении новой опции
   useEffect(() => {
-    // Scroll down when an element is added (when the list length increases)
-    if (optionsEndRef.current) {
-       optionsEndRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    if (optionsEndRef.current && options.length > 1 && options[options.length - 1].trim() === '') {
+      optionsEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [options.length]);
 
@@ -76,20 +89,27 @@ export const PollCreatorContent = ({ onSave, onDataChange, initialData }) => {
             width: '100%',
       }}>
         {options.map((opt, index) => (
-          <StyledInput 
-            key={index}
-            placeholder={`Вариант ${index + 1}`}
-            value={opt}
-            onChange={(e) => handleOptionChange(index, e.target.value)}
-          />
+          <div key={index} style={{ display: 'flex', alignItems: 'center' }}>
+            <StyledInput 
+              placeholder={`Вариант ${index + 1}`}
+              value={opt}
+              onChange={(e) => handleOptionChange(index, e.target.value)}
+              style={{ flexGrow: 1, marginBottom: '10px' }}
+            />
+          </div>
         ))}
         <div ref={optionsEndRef} />
       </div>
 
-      <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'flex-end', marginTop: 'auto' }}>
-        <ActionButton onClick={() => onSave({ title, options: options.filter(o => o.trim() !== '') })}>
-          Сохранить
-        </ActionButton>
+      {/* Кнопка "Сохранить" */}
+      <div style={{ flexShrink: 0, marginTop: '20px' }}>
+          <ActionButton 
+              // onSave вызывает handleSave в PollWidget, который делает API-вызов
+              onClick={() => onSave()} 
+              style={{ width: '100%' }}
+          >
+              Сохранить опрос
+          </ActionButton>
       </div>
     </div>
   );
