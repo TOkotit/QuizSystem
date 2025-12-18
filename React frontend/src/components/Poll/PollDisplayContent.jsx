@@ -1,183 +1,131 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { ActionButton, CheckboxSquare, RadioButton } from '../Atoms';
+import { usePollsApi } from '../../hooks/usePollsApi';
 
-export const PollDisplayContent = ({ pollData, toggleSettings }) => {
-    // Деструктуризация данных
-    const { title, options, settings } = pollData;
-    const { isAnonymous, endDate, endTime, multipleAnswers } = settings;
+export const PollDisplayContent = ({ pollData, setPollData }) => {
+    // Получаем данные напрямую из структуры Django Serializer
+    const { 
+        id: pollId, 
+        title, 
+        choices, // Массив объектов {id, choice_text, votes_count}
+        is_anonymous, 
+        multiple_answers, 
+        end_date,
+        total_votes // Общее кол-во голосов (приходит с бэкенда)
+    } = pollData;
 
-    // Форматирование информации
-    const anonymityStatus = isAnonymous ? 'Анонимно' : 'Неанонимно';
-    const displayEndDate = endDate ? `До ${endDate.split('-').reverse().join('.')}` : 'Нет даты';
-    const displayTime = endTime || '';
+    // --- API: ПОДКЛЮЧЕНИЕ ХУКА ---
+    const { votePoll, loading, error, setError } = usePollsApi();
 
-    const getPercentage = () => "0%";
+    const anonymityStatus = is_anonymous ? 'Анонимно' : 'Неанонимно';
+    const displayEndDate = end_date ? `До ${end_date.split('T')[0]}` : 'Нет даты';
 
+    // Подсчет процентов на основе данных с бэкенда
+    const getPercentage = (votes) => {
+        if (!total_votes || total_votes === 0) return "0%";
+        return `${Math.round((votes / total_votes) * 100)}%`;
+    };
+    
     const [isSaved, setIsSaved] = useState(false);
-    // --- ЛОГИКА ДЛЯ RADIO BUTTON (Единичный выбор) ---
     const [selectedOption, setSelectedOption] = useState();
+    const [selectedCheckboxes, setSelectedCheckboxes] = useState([]);
 
     const handleRadioChange = (event) => {
         setSelectedOption(event.target.value);
     };
 
-    // --- ЛОГИКА ДЛЯ CHECKBOX (Множественный выбор) ---
-    const [selectedCheckboxes, setSelectedCheckboxes] = useState([]);
-
-    const handleCheckboxChange = (optionValue) => {
-        setSelectedCheckboxes((prevSelected) => {
-            if (prevSelected.includes(optionValue)) {
-                // Если уже выбрано -> удаляем из массива
-                return prevSelected.filter((item) => item !== optionValue);
-            } else {
-                // Если не выбрано -> добавляем в массив
-                return [...prevSelected, optionValue];
-            }
+    const handleCheckboxChange = (choiceIdStr) => {
+        setSelectedCheckboxes((prev) => {
+            if (prev.includes(choiceIdStr)) return prev.filter((i) => i !== choiceIdStr);
+            return [...prev, choiceIdStr];
         });
     };
 
-    return (
-        <div
-            className="nodrag"
-            style={{
-                display: 'flex',
-                flexDirection: 'column',
-                height: '100%',
-                width: '100%',
-                overflowY: 'auto',
-                overflowX: 'hidden',
-                boxSizing: 'border-box',
-                paddingRight: '5px'
-            }}
-            onWheel={(e) => e.stopPropagation()}
-        >
-            {/* Верхний заголовок виджета */}
-            {/* <div style={{
-                fontSize: '14px',
-                color: '#555',
-                marginBottom: '20px',
-                flexShrink: 0,
-                paddingBottom: '10px',
-                borderBottom: '1px solid #eee'
-            }}>
-                Опрос - {anonymityStatus} - {displayEndDate} {displayTime}
-            </div> */}
+    const handleVote = useCallback(async () => {
+        setError(null);
+        let selectedIds = [];
+        if (multiple_answers) {
+            selectedIds = selectedCheckboxes;
+        } else if (selectedOption) {
+            selectedIds = [selectedOption];
+        }
 
-            {/* Заголовок опроса */}
+        if (selectedIds.length === 0) {
+            setError('Пожалуйста, выберите вариант ответа.');
+            return;
+        }
+
+try {
+            let updatedData = null;
+            
+            // Если одиночный выбор, отправляем только первый (и единственный) ID
+            if (!multiple_answers) {
+                updatedData = await votePoll(pollId, parseInt(selectedIds[0]));
+            } else {
+                // Если множественный выбор, отправляем голоса по одному
+                for (const choiceId of selectedIds) {
+                    updatedData = await votePoll(pollId, parseInt(choiceId));
+                }
+            }
+            
+            // Обновляем состояние родителя новыми данными с бэкенда 
+            if (updatedData) {
+                setPollData(updatedData);
+                setIsSaved(true);
+            }
+        } catch (e) {
+            console.error("Ошибка при голосовании:", e);
+            // Улучшенная обработка ошибки с бэкенда
+            setError(e.message || 'Неизвестная ошибка при отправке голоса.');
+        }
+         }, [pollId, multiple_answers, selectedOption, selectedCheckboxes, votePoll, setPollData, setError]);
+
+         const isVoteDisabled = isSaved || loading || (!multiple_answers && !selectedOption) || (multiple_answers && selectedCheckboxes.length === 0);
+
+    return (
+        <div className="nodrag" style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflowY: 'auto', paddingRight: '5px' }} onWheel={(e) => e.stopPropagation()}>
             <div style={{ flexShrink: 0, width: '100%' }}>
-                <h3 style={{
-                    fontSize: '22px',
-                    fontWeight: 'bold',
-                    color: '#000',
-                    marginBottom: '25px',
-                    lineHeight: '1.3',
-                    wordBreak: 'break-word',
-                    backgroundColor: '#e0e0e0',
-                    padding: '12px 16px',
-                    borderRadius: "10px"
-                }}>
-                    {title || 'Опрос'}
+                <h3 style={{ fontSize: '22px', fontWeight: 'bold', backgroundColor: '#e0e0e0', padding: '12px 16px', borderRadius: "10px" }}>
+                    {title}
                 </h3>
             </div>
+            
+            <div style={{ fontSize: '14px', color: '#666', marginBottom: '10px' }}>
+                {anonymityStatus} | {displayEndDate} | Голосов: {total_votes || 0}
+            </div>
 
-            {/* Список вариантов ответов */}
-            <div style={{ flexGrow: 1, overflowY: 'auto', overflowX: 'hidden', paddingRight: '5px' }}>
-                {options.length > 0 ? options.map((optionText, index) => {
-                    
-                    // Определяем, активен ли этот пункт (для стилизации или логики)
-                    const isChecked = multipleAnswers 
-                        ? selectedCheckboxes.includes(optionText) 
-                        : selectedOption === optionText;
+            {error && <p style={{color: 'red'}}>{error}</p>}
+
+            <div style={{ flexGrow: 1, overflowY: 'auto' }}>
+                {choices?.map((choice) => {
+                    const choiceId = String(choice.id);
+                    const isChecked = multiple_answers ? selectedCheckboxes.includes(choiceId) : selectedOption === choiceId;
+                    const percent = getPercentage(choice.votes_count);
 
                     return (
-                        <div
-                            key={index}
-                            onClick={() => {
-                                if (multipleAnswers) {
-                                    handleCheckboxChange(optionText);
-                                } else {
-                                    // Эмуляция события для радио, если нужно, или прямой вызов сеттера
-                                    setSelectedOption(optionText);
-                                }
-                            }}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                marginBottom: '15px',
-                                cursor: 'pointer',
-                                gap:"10px",
-                                
-                            }}
-                        >
-                            {multipleAnswers && (
-                                <CheckboxSquare
-                                    value={optionText}
-                                    checked={isChecked} // Передаем true/false
-                                    onChange={() => handleCheckboxChange(optionText)}
-                                />
-                            )}
-                            
-                            {!multipleAnswers && (
-                                <RadioButton
-                                    name="myGroup"
-                                    value={optionText}
-                                    checked={isChecked}
-                                    onChange={handleRadioChange}
-                                />
-                            )}
+                        <div key={choice.id} onClick={() => !isSaved && (multiple_answers ? handleCheckboxChange(choiceId) : setSelectedOption(choiceId))} style={{ display: 'flex', alignItems: 'center', marginBottom: '15px', cursor: isSaved ? 'default' : 'pointer', gap:"10px" }}>
+                            {!isSaved && multiple_answers && <CheckboxSquare checked={isChecked} onChange={() => handleCheckboxChange(choiceId)} />}
+                            {!isSaved && !multiple_answers && <RadioButton name={`poll-${pollId}`} value={choiceId} checked={isChecked} onChange={handleRadioChange} />}
 
-                            {/* Текст варианта и процент */}
-                            <div style={{
-                                flexGrow: 1,
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                backgroundColor: isChecked ? '#d0d0d0' : '#e0e0e0', // (Опционально) Подсветка выбранного
-                                padding: '12px 16px',
-                                fontSize: '16px',
-                                color: '#333',
-                                borderRadius: "10px",
-                                overflow: 'hidden',
-                                transition: 'background-color 0.2s'
-                            }}>
-                                <span style={{ wordBreak: 'break-word', marginRight: '10px' }}>
-                                    {optionText}
-                                </span>
-                                <span style={{ fontWeight: 'bold', flexShrink: 0 }}>
-                                    {getPercentage()}
-                                </span>
+                            <div style={{ flexGrow: 1, display: 'flex', justifyContent: 'space-between', backgroundColor: isChecked ? '#d0d0d0' : '#e0e0e0', padding: '12px 16px', borderRadius: "10px", position: 'relative', overflow: 'hidden' }}>
+                                {/* Прогресс бар (виден после голосования) */}
+                                {isSaved && <div style={{ position: 'absolute', top:0, left:0, height:'100%', width: percent, backgroundColor: 'rgba(0,123,255,0.2)', transition: 'width 0.5s' }}></div>}
+                                
+                                <span style={{zIndex: 1}}>{choice.choice_text}</span>
+                                <span style={{ fontWeight: 'bold', zIndex: 1 }}>{isSaved ? `${percent} (${choice.votes_count})` : ''}</span>
                             </div>
                         </div>
                     );
-                }) : (
-                    <p style={{ textAlign: 'center', color: '#777', marginTop: '30px' }}>Нет вариантов ответа.</p>
-                )}
+                })}
             </div>
 
-            <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'flex-end', marginTop: 'auto', paddingTop: '20px' }}>
+            <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
                 <ActionButton 
-                    onClick={() => {
-                        console.log('Single Selection:', selectedOption);
-                        console.log('Multiple Selection:', selectedCheckboxes);
-
-                    }}
-                    style={{ width: '100%', backgroundColor: '#d9d9d9', borderRadius: "10px" }}
+                    onClick={handleVote} 
+                    disabled={isVoteDisabled} // <-- ИЗМЕНЕНО: Используем переменную для логики отключения
+                    style={{ width: '100%', backgroundColor: isSaved ? '#5cb85c' : '#d9d9d9', borderRadius: "10px" }}
                 >
-                    Сохранить
-                </ActionButton>
-            </div>
-
-
-            {/* Кнопка "Завершить досрочно" Только для создателя */}
-            <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'flex-end', marginTop: 'auto', paddingTop: '20px' }}>
-                <ActionButton 
-                    onClick={() => {
-                        console.log("Завершить досрочно");
-                        
-                    }}
-                    style={{ width: '100%', backgroundColor: '#d9d9d9', borderRadius: "10px" }}
-                >
-                    Завершить досрочно(только для создателя)
+                    {loading ? 'Отправка...' : (isSaved ? 'Голос принят' : 'Сохранить')}
                 </ActionButton>
             </div>
         </div>

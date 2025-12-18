@@ -1,69 +1,157 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 
-// Заглушка вместо реального API URL
-const API_BASE_URL = '/api/polls/'; 
+const API_BASE_URL = '/api/polls/';
 
-// --- ХУК ДЛЯ УПРАВЛЕНИЯ API ОПРОСОВ ---
-export const usePollsApi = () => {
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-    // Имитируем, что аутентификация всегда готова
-    const [isAuthReady, setIsAuthReady] = useState(true); 
+const getCsrfToken = () => {
+  const name = 'csrftoken=';
+  const cookies = document.cookie ? document.cookie.split(';') : [];
+  for (let c of cookies) {
+    c = c.trim();
+    if (c.startsWith(name)) return decodeURIComponent(c.substring(name.length));
+  }
+  return null;
+};
 
+const fetchCsrf = async () => {
+  await fetch("/api/csrf/", { credentials: "include" }); 
+};
 
-    // 3. МЕТОД: ПОЛУЧЕНИЕ ВСЕХ ОПРОСОВ (MOCK)
-    const fetchAllPolls = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        
-        try {
-            // Возвращаем тестовые данные
-            return [
-                { id: 1, text: "Опрос о качестве обслуживания клиентов" }, 
-                { id: 2, text: "Опрос о новых функциях продукта X" },
-                { id: 3, text: "Опрос об удовлетворенности работой" },
-            ];
-        } catch (err) {
-            setError("Ошибка загрузки опросов");
-            return [];
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-    
-    // 4. МЕТОД: СОЗДАНИЕ ОПРОСА (MOCK)
-    const createPoll = useCallback(async (pollData) => {
-        setLoading(true);
-        setError(null);
-        
-        try {
-            console.log("MOCK API: Опрос создан с данными:", pollData);
-            
-            // Возвращаем объект, похожий на ответ реального API
-            return {
-                id: Math.floor(Math.random() * 1000),
-                title: pollData.title,
-                is_anonymous: pollData.settings.isAnonymous,
-                multiple_answers: pollData.settings.multipleAnswers,
-                end_date: pollData.settings.endDate,
-                created_at: new Date().toISOString(),
-                choices: pollData.options.map((text, index) => ({ id: index, text }))
-            };
-        } catch (err) {
-            setError("Не удалось создать опрос");
-            throw err;
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+const apiFetch = async (url, opts = {}) => {
+  const baseOptions = {
+    credentials: 'include',
+    method: 'GET',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+  };
 
+  const finalOptions = {
+    ...baseOptions,
+    ...opts,
+    headers: {
+        ...baseOptions.headers,
+        ...(opts.headers || {}),
+    }
+  };
+  
+  const res = await fetch(url, finalOptions);
+  const text = await res.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch (e) { data = text; }
 
-    return {
-        isAuthReady,
-        loading,
-        error,
-        setError, 
-        fetchAllPolls,
-        createPoll,
+  if (!res.ok) {
+    const message = (data && (data.detail || data.message)) || res.statusText || 'Ошибка сервера';
+    const err = new Error(message);
+    err.status = res.status;
+    err.data = data;
+    throw err;
+  }
+  return data;
+};
+
+export const usePollsApi = (externalApiBaseUrl) => {
+
+  const API_BASE_URL = externalApiBaseUrl || '/api/polls/';
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchAllPolls = useCallback(async () => {
+      try {
+          // Предполагается, что GET-запрос на /api/polls/ возвращает массив всех опросов
+         const data = await apiFetch(`${API_BASE_URL}list/`, { method: 'GET' }); 
+          return data;
+      } catch (e) {
+          console.error('Ошибка получения списка опросов:', e);
+          throw e;
+      }
+  }, [apiFetch, API_BASE_URL]);
+
+  const fetchPoll = useCallback(async (pollId) => {
+    setLoading(true);
+    setError(null);
+    try {
+     const data = await apiFetch(`${API_BASE_URL}${pollId}/`, { method: 'GET' });
+      return data;
+    } catch (err) {
+      setError(err.message);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const createPoll = useCallback(async (pollData, pollSettings) => {
+    setLoading(true);
+    setError(null);
+
+    await fetchCsrf();
+    const csrfToken = getCsrfToken();
+    if (!csrfToken) throw new Error("CSRF token missing!");
+
+    const choices = (pollData.options || [])
+      .filter(o => o.trim() !== '')
+      .map(text => ({ choice_text: text }));
+
+    const payload = {
+      title: pollData.title,
+      choices,
+      is_anonymous: pollSettings.isAnonymous,
+      multiple_answers: pollSettings.multipleAnswers,
+      end_date: pollSettings.endDate ? `${pollSettings.endDate}T${pollSettings.endTime || '23:59'}:00Z` : null,
     };
+
+    try {
+      const data = await apiFetch(`${API_BASE_URL}create/`, {
+        method: 'POST',
+        headers: { 
+            'X-CSRFToken': csrfToken,
+        },
+        body: JSON.stringify(payload),
+      });
+      return data;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const votePoll = useCallback(async (pollId, choiceId) => {
+    setLoading(true);
+    setError(null);
+
+    await fetchCsrf();
+    const csrfToken = getCsrfToken();
+    if (!csrfToken) throw new Error("CSRF token missing!");
+
+    try {
+      const data = await apiFetch(`${API_BASE_URL}${pollId}/vote/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken },
+        body: JSON.stringify({ choice_id: choiceId }),
+      });
+      return data;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+
+
+
+  return {
+    createPoll,
+    loading,
+    error,
+    setError,
+    fetchAllPolls,
+    fetchPoll,
+    createPoll,
+    votePoll,
+  };
 };

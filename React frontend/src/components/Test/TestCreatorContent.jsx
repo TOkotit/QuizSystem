@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyledInput, ActionButton, RadioButton, CheckboxSquare } from '../Atoms'; // Убрал CheckboxSquare, если не используется
+import { StyledInput, ActionButton, RadioButton, CheckboxSquare } from '../Atoms';
 
 export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
     // --- Общие параметры теста ---
@@ -10,7 +10,7 @@ export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
     const [activeTaskIndex, setActiveTaskIndex] = useState(initialData?.activeTaskIndex ||null);
 
     // Обновляем данные при изменении настроек
-      useEffect(() => {
+    useEffect(() => {
         onDataChange({title, tasks, activeTaskIndex});
       }, [title, tasks, activeTaskIndex, onDataChange]);
 
@@ -293,7 +293,7 @@ export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
                     + Добавить задание
                 </ActionButton>
 
-                <ActionButton onClick={() => console.log('сохранение')}
+                <ActionButton onClick={() => onSave(tasks)}
                     style={{borderRadius:'10px'}}>
                     Сохранить тест
                 </ActionButton>
