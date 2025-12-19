@@ -83,7 +83,7 @@ try {
          const isVoteDisabled = isSaved || loading || (!multiple_answers && !selectedOption) || (multiple_answers && selectedCheckboxes.length === 0);
 
     return (
-        <div className="nodrag" style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflowY: 'auto', paddingRight: '5px' }} onWheel={(e) => e.stopPropagation()}>
+        <div className="nodrag" style={{ display: 'flex', color: '#000', flexDirection: 'column', height: '100%', width: '100%', overflowY: 'auto', paddingRight: '5px' }} onWheel={(e) => e.stopPropagation()}>
             <div style={{ flexShrink: 0, width: '100%' }}>
                 <h3 style={{ fontSize: '22px', fontWeight: 'bold', backgroundColor: '#e0e0e0', padding: '12px 16px', borderRadius: "10px" }}>
                     {title}
