@@ -12,7 +12,7 @@ export const TestDisplayContent = ({ testData }) => {
     const [activeTaskIndex, setActiveTaskIndex] = useState(0);
 
     const initialCompletedTasks = testData.tasks.map((task, index) => ({
-            id: index + Date.now(), 
+            id: index + Date.now(),
             question: task.question,
             type: task.type,
             score: task.score,
@@ -29,7 +29,10 @@ export const TestDisplayContent = ({ testData }) => {
 
     const [completedTasks, setCompletedTasks] = useState(initialCompletedTasks);
 
+    const [previousAttempts, setPreviousAttemtps] = useState([]);
     
+    const [allResults, setAllResults] = useState([]);
+
     // Обновление текущего задания
     const updateActiveCompletedTask = (field, value) => {
         if (activeTaskIndex === null) return;
@@ -125,6 +128,21 @@ export const TestDisplayContent = ({ testData }) => {
                                 <ActionButton onClick={() => handleTestStart()}>
                                     Начать тест
                                 </ActionButton>
+                                <div>
+                                    {previousAttempts ? (
+                                        <div>
+                                            {previousAttempts.map((score, maxScore, index) => (
+                                                <div>
+                                                    Попытка {index + 1} : {score}/{maxScore}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div style={{ color: '#888', textAlign: 'center', padding: '20px' }}>
+                                            Еще нет попыток
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
                         {/* Прохождение теста */}
@@ -240,7 +258,23 @@ export const TestDisplayContent = ({ testData }) => {
                     )}
                     </div>
                 )} 
-
+                {displayViewMode === 'asCreator' && (
+                    <div>
+                        {allResults ? (
+                            <div>
+                                {allResults.map((userID, score, maxScore, index) => (
+                                    <div>
+                                        {userID} - {score}/{maxScore}
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div style={{ color: '#888', textAlign: 'center', padding: '20px' }}>
+                                Еще нет результатов
+                            </div>
+                        )}
+                    </div>
+                )}
                     
 
             </div>
