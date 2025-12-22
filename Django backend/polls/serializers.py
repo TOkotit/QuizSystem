@@ -123,3 +123,122 @@ class VoteSerializer(serializers.ModelSerializer):
         except IntegrityError:
             raise serializers.ValidationError(
                 {"non_field_errors": "Не удалось сохранить голос из-за ошибки транзакции."})
+
+
+
+# --- СЕРИАЛИЗАТОРЫ ДЛЯ ТЕСТОВ ---
+
+class TaskOptionSerializer(models.ModelSerializer):
+    class Meta:
+        model = TaskOption
+        fields = ['id', 'text', 'is_correct']
+
+class TaskSerializer(models.ModelSerializer):
+    options = TaskOptionSerializer(many=True, required=False)
+
+    class Meta:
+        model = Task
+        fields = ['id', 'question', 'type', 'score', 'correct_text', 'order', 'options']
+
+class TestSerializer(models.ModelSerializer):
+    tasks = TaskSerializer(many=True)
+    owner_username = serializers.CharField(source='owner.username', read_only=True)
+
+    class Meta:
+        model = Test
+        fields = [
+            'id', 'owner', 'owner_username', 'title', 'created_at',
+            'completion_time', 'attempt_number', 'end_date', 'active', 'tasks'
+        ]
+        read_only_fields = ['owner']
+
+    @transaction.atomic
+    def create(self, validated_data):
+        tasks_data = validated_data.pop('tasks')
+        test = Test.objects.create(**validated_data)
+        for task_data in tasks_data:
+            options_data = task_data.pop('options', [])
+            task = Task.objects.create(test=test, **task_data)
+            for option_data in options_data:
+                TaskOption.objects.create(task=task, **option_data)
+        return test
+
+class TaskAnswerSerializer(models.ModelSerializer):
+    class Meta:
+        model = TaskAnswer
+        fields = ['task', 'answer_text', 'selected_options']
+
+
+class TestAttemptSerializer(serializers.ModelSerializer):
+    answers = TaskAnswerSerializer(many=True)
+
+    class Meta:
+        model = TestAttempt
+        fields = ['id', 'test', 'user', 'score_obtained', 'total_score', 'started_at', 'completed_at', 'answers']
+        read_only_fields = ['user', 'score_obtained', 'total_score', 'completed_at']
+
+    def validate(self, data):
+        user = self.context['request'].user
+        test = data['test']
+
+        # 1. Валидация попыток
+        existing_attempts = TestAttempt.objects.filter(user=user, test=test).count()
+        if existing_attempts >= test.attempt_number:
+            raise ValidationError(f"Вы исчерпали лимит попыток ({test.attempt_number}).")
+
+        # 2. Валидация дедлайна
+        if test.end_date and timezone.now() > test.end_date:
+            raise ValidationError("Срок прохождения теста истек.")
+
+        return data
+
+    @transaction.atomic
+    def create(self, validated_data):
+        answers_data = validated_data.pop('answers')
+        test = validated_data['test']
+        user = self.context['request'].user
+
+        attempt = TestAttempt.objects.create(user=user, **validated_data)
+
+        total_score = 0
+        obtained_score = 0
+
+        for ans_data in answers_data:
+            task = ans_data['task']
+            selected_options = ans_data.get('selected_options', [])
+            answer_text = ans_data.get('answer_text', '')
+
+            # Создаем запись ответа
+            ans_obj = TaskAnswer.objects.create(attempt=attempt, task=task, answer_text=answer_text)
+            if selected_options:
+                ans_obj.selected_options.set(selected_options)
+
+            total_score += task.score
+
+            # --- ЛОГИКА ПРОВЕРКИ ---
+            if task.type == 'text':
+                if answer_text.strip().lower() == (task.correct_text or "").strip().lower():
+                    obtained_score += task.score
+
+            elif task.type == 'single':
+                # Проверяем, что выбран ровно один вариант и он правильный
+                if len(selected_options) == 1:
+                    option = selected_options[0]
+                    if option.is_correct:
+                        obtained_score += task.score
+
+            elif task.type == 'multiple':
+                # Для multiple считаем ответ верным, только если выбраны ВСЕ верные и НИ ОДНОГО неверного
+                correct_options_ids = set(task.options.filter(is_correct=True).values_list('id', flat=True))
+                selected_options_ids = set([opt.id for opt in selected_options])
+
+                if correct_options_ids == selected_options_ids:
+                    obtained_score += task.score
+
+        # Обновляем итоги попытки
+        attempt.total_score = total_score
+        attempt.score_obtained = obtained_score
+        attempt.completed_at = timezone.now()
+        attempt.save()
+
+        return attempt

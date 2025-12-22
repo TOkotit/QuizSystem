@@ -116,3 +116,62 @@ class VoteCreateAPIView(generics.CreateAPIView):
 @method_decorator(ensure_csrf_cookie, name='dispatch')
 class ReactAppView(TemplateView):
     template_name = "index.html"  # Используется для отдачи вашего React-приложения
+
+
+# --- ПРЕДСТАВЛЕНИЯ ДЛЯ ТЕСТОВ ---
+
+class TestListCreateAPIView(generics.ListCreateAPIView):
+    queryset = Test.objects.all()
+    serializer_class = TestSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+
+class TestAttemptCreateAPIView(generics.CreateAPIView):
+    """Эндпоинт для завершения теста и расчета баллов"""
+    serializer_class = TestAttemptSerializer
+    permission_classes = [IsAuthenticated]
+
+    @transaction.atomic
+    def perform_create(self, serializer):
+        test_id = self.request.data.get('test')
+        test = get_object_or_404(Test, id=test_id)
+
+        # Логика расчета баллов
+        total_score = 0
+        obtained_score = 0
+        answers_data = self.request.data.get('answers', [])
+
+        # Предварительно создаем попытку
+        attempt = serializer.save(user=self.request.user, test=test)
+
+        for ans in answers_data:
+            task = Task.objects.get(id=ans['task'])
+            total_score += task.score
+
+            # Простая логика проверки (для примера):
+            if task.type == 'text':
+                if ans.get('answer_text') == task.correct_text:
+                    obtained_score += task.score
+            # Здесь можно добавить сложную логику для single/multiple
+
+        attempt.total_score = total_score
+        attempt.score_obtained = obtained_score
+        attempt.completed_at = timezone.now()
+        attempt.save()
+
+class TestRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Test.objects.all()
+    serializer_class = TestSerializer
+    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
+
+class TestAttemptCreateAPIView(generics.CreateAPIView):
+    """Эндпоинт завершения теста: получает ответы, считает баллы"""
+    serializer_class = TestAttemptSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        # Все расчеты произойдут внутри TestAttemptSerializer.create()
+        serializer.save()

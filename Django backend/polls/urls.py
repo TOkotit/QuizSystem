@@ -22,4 +22,8 @@ urlpatterns = [
     # 5. Главная страница (для отдачи index.html, если React и Django на одном домене)
     # re_path(r'^.*$', views.ReactAppView.as_view(), name='react-app'),
     # Этот эндпоинт лучше добавлять в корневой urls.py
+
+    path('tests/', views.TestListCreateAPIView.as_view(), name='test-list-create'),
+    path('tests/submit/', views.TestAttemptCreateAPIView.as_view(), name='test-submit'),
+    path('tests/<int:pk>/', views.TestRetrieveUpdateDestroyAPIView.as_view(), name='test-detail'),
 ]
