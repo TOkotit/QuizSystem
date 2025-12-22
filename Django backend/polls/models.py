@@ -7,7 +7,7 @@ import secrets
 
 class Poll(models.Model):
     # --- Оригинальные поля (для совместимости) ---
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, verbose_name="Создатель")
+    owner = models.IntegerField(null=True, blank=True, verbose_name="ID создателя")
     title = models.TextField(verbose_name="Название опроса")
     pub_date = models.DateTimeField(default=timezone.now)
     active = models.BooleanField(default=True)

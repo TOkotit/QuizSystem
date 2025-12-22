@@ -23,14 +23,14 @@ class PollDetailSerializer(serializers.ModelSerializer):
     total_votes = serializers.IntegerField(read_only=True)  # Берется из @property модели
 
     # Дополнительные поля для фронтенда
-    owner_username = serializers.CharField(source='owner.username', read_only=True)
+    # owner_username = serializers.CharField(source='owner.username', read_only=True)
     is_active = serializers.SerializerMethodField()
 
     class Meta:
         model = Poll
         fields = (
             'id', 'title', 'is_anonymous', 'multiple_answers', 'end_date',
-            'created_at', 'owner_username', 'choices', 'total_votes', 'is_active'
+            'created_at', 'choices', 'total_votes', 'is_active'
         )
         read_only_fields = fields  # Все поля только для чтения
 
