@@ -64,7 +64,7 @@ const PollWidget = ({ initialTitle, pollId, onSaved }) => {
         }
 
         try {
-            const savedData = await createPoll(pollCreationData, pollSettingsData);         
+            const savedData = await createPoll(pollCreationData, pollSettingsData);
             
             setSavedPollData(savedData);
 

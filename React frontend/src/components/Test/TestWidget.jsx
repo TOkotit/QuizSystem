@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { BaseWidgetCard } from '../BaseWidgetCard';
 import { TestCreatorContent } from './TestCreatorContent';
 import { TestSettingsContent } from './TestSettingsContent';
-// import { TestDisplayContent } from './TestDisplayContent'; 
+import { TestDisplayContent } from './TestDisplayContent'; 
 
 const TestWidget = ({initialTitle}) => {
     // Состояние для хранения данных настроек всего теста
@@ -19,7 +19,6 @@ const TestWidget = ({initialTitle}) => {
         tasks: [],
         activeTaskIndex: '',
     });
-
 
     // Состояние для отображений
     const [viewMode, setViewMode] = useState('creator'); 
@@ -62,6 +61,7 @@ const TestWidget = ({initialTitle}) => {
                     <TestCreatorContent 
                         onDataChange={setTestCreationData} 
                         initialData={testCreationData} 
+                        onSave={handleSave}
                     />
                 )}
                 {viewMode === 'settings' && (
@@ -74,7 +74,7 @@ const TestWidget = ({initialTitle}) => {
                 )}
                 {viewMode === 'display' && (
                     <TestDisplayContent 
-
+                        testData={{ ...testCreationData, settings: testSettingsData }}
                     />
                 )}
         </BaseWidgetCard>
