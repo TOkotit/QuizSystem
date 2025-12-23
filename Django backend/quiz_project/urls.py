@@ -16,10 +16,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from polls.views import set_csrf_cookie
+from polls.views import get_csrf
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/polls/', include('polls.urls')),
-    path('api/csrf/', set_csrf_cookie, name='api_csrf_set'),
+    path('api/csrf/', get_csrf, name='api_csrf_set'),
 ]

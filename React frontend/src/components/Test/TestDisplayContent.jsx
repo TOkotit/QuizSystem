@@ -1,282 +1,172 @@
 import React, { useState, useEffect } from 'react';
-import { StyledInput, ActionButton, RadioButton, CheckboxSquare } from '../Atoms'; 
+import { ActionButton, RadioButton, CheckboxSquare } from '../Atoms';
+import { useTestsApi } from '../../hooks/useTestsApi';
 
 export const TestDisplayContent = ({ testData }) => {
-    const { title, tasks, settings } = testData;
-    const { completionTime, attemptNumber, endDate, endTime } = settings;
+    // В опросах данные приходят извне, делаем так же
+    const testId = testData?.id; 
+    const title = testData?.title || '';
+    const tasks = testData?.tasks || [];
+    const settings = testData?.settings || {};
+    
+    const { submitAttempt, loading: isSubmitting } = useTestsApi();
 
-
-    const [displayViewMode, setDisplayViewMode] = useState('asViewer'); // asCreator/asViewer
     const [testBeginningMode, setTestBeginningMode] = useState(true);
-
     const [activeTaskIndex, setActiveTaskIndex] = useState(0);
+    const [resultData, setResultData] = useState(null);
+    const [completedTasks, setCompletedTasks] = useState([]);
 
-    const initialCompletedTasks = testData.tasks.map((task, index) => ({
-            id: index + Date.now(),
-            question: task.question,
-            type: task.type,
-            score: task.score,
-            correctText: task.correctText,
-            options: task.options.filter(opt => opt.trim() !== ''),
-            correctRadioOption: task.correctRadioOption,
-            correctBoxOptions: task.correctBoxOptions,
-
-            // дополнительные поля
-            completedText: '',
-            completedRadioOption: '',
-            completedBoxOptions: '',
-    }));
-
-    const [completedTasks, setCompletedTasks] = useState(initialCompletedTasks);
-
-    const [previousAttempts, setPreviousAttemtps] = useState([]);
-    
-    const [allResults, setAllResults] = useState([]);
-
-    // Обновление текущего задания
-    const updateActiveCompletedTask = (field, value) => {
-        if (activeTaskIndex === null) return;
-
-        const updatedCTasks = [...completedTasks];
-        updatedCTasks[activeTaskIndex] = {
-            ...updatedCTasks[activeTaskIndex],
-            [field]: value
-        };
-        setCompletedTasks(updatedCTasks);
-    };
-
-    const handleTestStart = () => {
-
-        setTestBeginningMode(false);
-    }
-
-    const handleRadioChange = (optionValue) => {
-        updateActiveCompletedTask('completedRadioOption', optionValue)
-    };
-
-    const handleCheckboxChange = (optionValue, correctBoxOptions) => {
-        let res = []
-
-        if (correctBoxOptions.includes(optionValue)) {
-            // Если уже выбрано -> удаляем из массива
-            res = correctBoxOptions.filter((item) => item !== optionValue);
-        } else {
-            // Если не выбрано -> добавляем в массив
-            res =  [...correctBoxOptions, optionValue];
+    // ЖЕСТКАЯ ПРОВЕРКА: Инициализация как в рабочих опросах
+    useEffect(() => {
+        if (tasks && Array.isArray(tasks) && tasks.length > 0) {
+            const initial = tasks.map((task) => ({
+                id: task.id,
+                question: task.question,
+                type: task.type,
+                score: task.score,
+                options: Array.isArray(task.options) ? task.options : [],
+                completedText: '',
+                completedRadioOption: '',
+                completedBoxOptions: [],
+            }));
+            setCompletedTasks(initial);
         }
+    }, [testData, tasks]);
 
-        updateActiveCompletedTask('completedBoxOptions', res)
+    const updateActiveCompletedTask = (field, value) => {
+        setCompletedTasks(prev => {
+            const updated = [...prev];
+            if (updated[activeTaskIndex]) {
+                updated[activeTaskIndex] = { ...updated[activeTaskIndex], [field]: value };
+            }
+            return updated;
+        });
     };
 
-    // Стили
-    const oneSettingStyle = { 
-        display: 'flex', gap: '10px', alignItems: 'center', 
+    const handleCheckboxChange = (optionValue) => {
+        const currentTask = completedTasks[activeTaskIndex];
+        if (!currentTask) return;
+        const currentSelected = currentTask.completedBoxOptions || [];
+        const nextSelected = currentSelected.includes(optionValue)
+            ? currentSelected.filter(item => item !== optionValue)
+            : [...currentSelected, optionValue];
+        updateActiveCompletedTask('completedBoxOptions', nextSelected);
     };
-    
-    // Стили для табов (вкладок) заданий
-    const taskTabStyle = (isActive) => ({
-        padding: '8px',
-        cursor: 'pointer',
-        backgroundColor: isActive ? '#00a2ffff' : '#e0e0e0',
-        color: isActive ? '#ffffffff' : '#333',
-        
-        borderRadius: '10px 10px 0 0',
-        fontSize: '14px',
-        fontWeight:'bold',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '5px'
-    });
-    
 
-    return (
-            <div style={{ display: 'flex', 
-                    flexDirection: 'column', 
-                    height: '100%', 
-                    width: '100%', 
-                    }}
-                className='nodrag'>
-            
-                {/* Режим прохождения */}
-                {displayViewMode === 'asViewer' && (
-                    <div style={{height:'100%',}}>
-                        {/* Заголовок теста */}
-                        <div style={{ flexShrink: 0, width: '100%' }}>
-                            <h3 style={{
-                                fontSize: '22px',
-                                fontWeight: 'bold',
-                                color: '#000',
-                                marginBottom: '25px',
-                                lineHeight: '1.3',
-                                wordBreak: 'break-word',
-                            }}>
-                                {title || 'Тест'}
-                            </h3>
-                        </div>
-                        {/* Начальный экран */}
-                        {testBeginningMode && (
-                            <div>
-                                <div style={{color:'#000', 
-                                    marginBottom:'20px',
-                                    display:'flex', 
-                                    flexDirection:'column', 
-                                    gap:'10px'}}>
-                                    <label>Пройти до {endDate} {endTime}</label>
-                                    <label>Время на прохождение {completionTime}</label>
-                                    <label>Количество попыток {attemptNumber}</label>
-                                </div>
-                                <ActionButton onClick={() => handleTestStart()}>
-                                    Начать тест
-                                </ActionButton>
-                                <div>
-                                    {previousAttempts ? (
-                                        <div>
-                                            {previousAttempts.map((score, maxScore, index) => (
-                                                <div>
-                                                    Попытка {index + 1} : {score}/{maxScore}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div style={{ color: '#888', textAlign: 'center', padding: '20px' }}>
-                                            Еще нет попыток
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                        {/* Прохождение теста */}
-                        {!testBeginningMode && (
-                            <div style={{display: 'flex', flexDirection:'column', height:'100%', gap:'10px'}}>
-                                {/* НАВИГАЦИЯ ПО ЗАДАНИЯМ (ТАБЫ) */}
-                                <div style={{ display: 'flex', 
-                                    borderBottom: '2px solid #333' }}>
-                                    {completedTasks.map((task, index) => (
-                                        <div 
-                                            key={task.id} 
-                                            style={taskTabStyle(index === activeTaskIndex)}
-                                            onClick={() => setActiveTaskIndex(index)}
-                                        >
-                                            Задание {index + 1}
-                                        </div>
-                                    ))}
-                                </div>
+    // ОТПРАВКА: Исправлено под твой urls.py (/api/polls/tests/submit/)
+    const handleFinishTest = async () => {
+        if (!testId) return;
+        try {
+            const payload = {
+                test: testId,
+                answers: completedTasks.map(task => ({
+                    task_id: task.id,
+                    answer_text: task.completedText,
+                    answer_single: task.completedRadioOption,
+                    answer_multiple: task.completedBoxOptions
+                }))
+            };
 
-                                {/* Обозреватель ТЕКУЩЕГО ЗАДАНИЯ */}
-                                <div style={{
-                                    padding:'10px',
-                                    overflowY: 'auto',
-                                    marginBottom:'20px',
-                                    color: '#333', }}>
-                                    {activeTaskIndex !== null && completedTasks[activeTaskIndex] ? (
-                                        <div style={{display: 'flex',
-                                                flexDirection: 'column',
-                                                gap: '10px',
-                                                }}>
-                    
-                                            <div style={{ display: 'flex', 
-                                                flex:1,
-                                                flexDirection: 'column',
-                                                gap: '10px', }}>
-                                                <label style={{fontSize: '18px',fontWeight:'bold',}}>Вопрос:</label>
-                                                <label style={{fontSize: '18px',}}>{completedTasks[activeTaskIndex].question}</label>
-                                            </div>
-                                            
-                                            <div style={oneSettingStyle}>
-                                                <span>Баллы: {completedTasks[activeTaskIndex].score}</span>
-                                            </div>
-                                            
-                                            {completedTasks[activeTaskIndex].type === 'text' && (
-                                                <div>
-                                                    <textarea
-                                                        value={completedTasks[activeTaskIndex].completedText}
-                                                        onChange={(e) => updateActiveCompletedTask('completedText', e.target.value)}
-                                                        style={{ 
-                                                            width: '100%',
-                                                            minHeight:'100px',
-                                                            fontSize: '18px',
-                                                            resize: 'vertical',
-                                                            color: '#333',
-                                                            backgroundColor: '#ebebebff' }}
-                                                        placeholder="Введите ответ..."
-                                                    />
-                                                </div>
-                                            )}
-                    
-                                            {completedTasks[activeTaskIndex].type === 'single' && (
-                                                <div style={{display: 'flex', flexDirection:'column', gap:'10px'}}>
-                                                    {completedTasks[activeTaskIndex].options.map((opt, index) => (
-                                                            <div key={activeTaskIndex + index} style={{display: 'flex', flexDirection:'row', gap:'10px'}}> 
-                                                            <RadioButton 
-                                                                checked={completedTasks[activeTaskIndex].completedRadioOption === opt}
-                                                                onChange={() => handleRadioChange(opt)}
-                                                                name={completedTasks[activeTaskIndex].id}
-                                                            />
-                                                            <label>{opt}</label>
-                                                            </div>
-                                                            ))}
-                                                    
-                                                </div>
-                                            )}
-                    
-                                            {completedTasks[activeTaskIndex].type === 'multiple' && (
-                                                <div style={{display: 'flex', flexDirection:'column', gap:'10px'}}>
-                                                    {completedTasks[activeTaskIndex].options.map((opt, index) => (
-                                                            <div key={activeTaskIndex + index} style={{display: 'flex', flexDirection:'row', gap:'10px'}}> 
-                                                            <CheckboxSquare 
-                                                                checked={completedTasks[activeTaskIndex].completedBoxOptions.includes(opt)}
-                                                                onChange={() => handleCheckboxChange(opt, completedTasks[activeTaskIndex].completedBoxOptions)}
-                                                            />
-                                                            <label>{opt}</label>
-                                                            </div>
-                                                            ))}
-                                                </div>
-                                            )}
-                                            
-                                        </div>
-                                    ) : (
-                                        <div style={{ color: '#888', textAlign: 'center', padding: '20px' }}>
-                                            Нет заданий.
-                                        </div>
-                                    )}
-                                </div>
-                            
-                                <div style={{display:'flex', alignContent:'end', flexDirection:'row', justifyContent:'flex-end'}}>
-                                    <ActionButton>
-                                        Сохранить ответ
-                                    </ActionButton>
-                                </div>
-                                {completedTasks.length - 1 === activeTaskIndex && (
-                                    <div style={{display:'flex', alignContent:'end', flexDirection:'row', justifyContent:'flex-end'}}>
-                                        <ActionButton>
-                                            Завершить тест 
-                                        </ActionButton>
-                                    </div>
-                                )}
-                                
-                            </div>
-                    )}
-                    </div>
-                )} 
-                {displayViewMode === 'asCreator' && (
-                    <div>
-                        {allResults ? (
-                            <div>
-                                {allResults.map((userID, score, maxScore, index) => (
-                                    <div>
-                                        {userID} - {score}/{maxScore}
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div style={{ color: '#888', textAlign: 'center', padding: '20px' }}>
-                                Еще нет результатов
-                            </div>
-                        )}
-                    </div>
-                )}
-                    
+            const response = await submitAttempt(testId, payload);
+            setResultData(response);
+        } catch (err) {
+            console.error("Payload error:", err);
+        }
+    };
 
+    // ЭКРАН РЕЗУЛЬТАТА (как в опросах после голосования)
+    if (resultData) {
+        return (
+            <div style={{ textAlign: 'center', padding: '20px', color: '#000' }}>
+                <h3 style={{color: '#28a745'}}>Тест завершен!</h3>
+                <p style={{fontSize: '18px'}}>Результат: <b>{resultData.score}</b> / {resultData.max_score}</p>
+                <ActionButton onClick={() => window.location.reload()}>ОК</ActionButton>
             </div>
         );
-}
+    }
+
+    // ЗАЩИТА ОТ "map of undefined": Если задач нет в стейте, не рендерим внутренности
+    if (!testBeginningMode && completedTasks.length === 0) {
+        return <div style={{color: '#000', padding: '20px'}}>Загрузка...</div>;
+    }
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+            <h3 style={{ color: '#000', marginBottom: '15px' }}>{title}</h3>
+            
+            {testBeginningMode ? (
+                <div style={{color:'#000'}}>
+                    <div style={{marginBottom: '15px'}}>
+                        <p>Доступно до: {settings.endDate} {settings.endTime}</p>
+                        <p>Попыток: {settings.attemptNumber}</p>
+                    </div>
+                    <ActionButton onClick={() => setTestBeginningMode(false)}>Начать тест</ActionButton>
+                </div>
+            ) : (
+                <>
+                    {/* Табы вопросов */}
+                    <div style={{ display: 'flex', borderBottom: '2px solid #333', marginBottom: '15px', overflowX: 'auto' }}>
+                        {completedTasks.map((_, index) => (
+                            <div 
+                                key={index} 
+                                onClick={() => setActiveTaskIndex(index)}
+                                style={{
+                                    padding: '8px 12px',
+                                    cursor: 'pointer',
+                                    backgroundColor: index === activeTaskIndex ? '#00a2ff' : '#eee',
+                                    color: index === activeTaskIndex ? '#fff' : '#000',
+                                    marginRight: '2px',
+                                    borderRadius: '5px 5px 0 0'
+                                }}
+                            >
+                                {index + 1}
+                            </div>
+                        ))}
+                    </div>
+
+                    <div style={{ color: '#000' }}>
+                        <p style={{fontWeight: 'bold'}}>{completedTasks[activeTaskIndex]?.question}</p>
+                        
+                        {completedTasks[activeTaskIndex]?.type === 'text' && (
+                            <textarea 
+                                value={completedTasks[activeTaskIndex].completedText}
+                                onChange={(e) => updateActiveCompletedTask('completedText', e.target.value)}
+                                style={{ width: '100%', height: '80px', padding: '5px' }}
+                            />
+                        )}
+
+                        {completedTasks[activeTaskIndex]?.type === 'single' && 
+                            completedTasks[activeTaskIndex].options.map((opt, i) => (
+                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px' }}>
+                                    <RadioButton 
+                                        checked={completedTasks[activeTaskIndex].completedRadioOption === opt}
+                                        onChange={() => updateActiveCompletedTask('completedRadioOption', opt)}
+                                    />
+                                    <label>{opt}</label>
+                                </div>
+                        ))}
+
+                        {completedTasks[activeTaskIndex]?.type === 'multiple' && 
+                            completedTasks[activeTaskIndex].options.map((opt, i) => (
+                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px' }}>
+                                    <CheckboxSquare 
+                                        checked={completedTasks[activeTaskIndex].completedBoxOptions.includes(opt)}
+                                        onChange={() => handleCheckboxChange(opt)}
+                                    />
+                                    <label>{opt}</label>
+                                </div>
+                        ))}
+                    </div>
+
+                    <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
+                        {activeTaskIndex === completedTasks.length - 1 && (
+                            <ActionButton onClick={handleFinishTest} disabled={isSubmitting}>
+                                {isSubmitting ? 'Сохранение...' : 'Завершить'}
+                            </ActionButton>
+                        )}
+                    </div>
+                </>
+            )}
+        </div>
+    );
+};

@@ -22,6 +22,20 @@ const TestResizable = ({ id, data, selected }) => {
   const updateNodeInternals = useUpdateNodeInternals();
   const { setNodes } = useReactFlow(); 
 
+  const handleTestSaved = (newId) => {
+      setNodes((nds) =>
+          nds.map((node) => {
+              if (node.id === id) {
+                  return {
+                      ...node,
+                      data: { ...node.data, pollId: newId }, // Теперь ID теста навсегда в узле
+                  };
+              }
+              return node;
+          })
+      );
+  };
+
   const onResizeStop = useCallback((e, direction, ref, d) => {
       const width = ref.offsetWidth;
       const height = ref.offsetHeight;
@@ -96,7 +110,9 @@ const TestResizable = ({ id, data, selected }) => {
       > 
 
         {/* Основной виджет опроса */}
-        {<TestWidget initialTitle={data.label} />}
+        {<TestWidget
+         pollId={data.pollId} 
+        onSaved={handleTestSaved} />}
 
       </div>
       <Handle type="source" position={Position.Left} />
