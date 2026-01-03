@@ -4,7 +4,7 @@ from django.utils import timezone
 from django.db.models import Sum
 
 class Poll(models.Model):
-    owner = models.IntegerField(null=True, blank=True, verbose_name="ID создателя")
+    owner = models.CharField(null=True, blank=True, verbose_name="ID создателя")
     title = models.TextField(verbose_name="Название опроса")
     pub_date = models.DateTimeField(default=timezone.now)
     active = models.BooleanField(default=True)
@@ -46,7 +46,7 @@ class Choice(models.Model):
 class Vote(models.Model):
     poll = models.ForeignKey(Poll, related_name='votes', on_delete=models.CASCADE)
     choice = models.ForeignKey(Choice, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    user = models.CharField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -57,7 +57,7 @@ class Vote(models.Model):
         return f"{user_name} проголосовал в {self.poll.title}"
 
 class Test(models.Model):
-    owner = models.IntegerField(null=True, blank=True, verbose_name="ID создателя")
+    owner = models.CharField(null=True, blank=True, verbose_name="ID создателя")
     title = models.TextField(verbose_name="Название теста")
     created_at = models.DateTimeField(auto_now_add=True)
     completion_time = models.IntegerField(null=True, blank=True, verbose_name="Время на прохождение (мин)")
@@ -99,7 +99,7 @@ class TaskOption(models.Model):
 
 class TestAttempt(models.Model):
     test = models.ForeignKey(Test, related_name='attempts', on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    user = models.CharField( null=True, blank=True)
     score_obtained = models.IntegerField(default=0, verbose_name="Набрано баллов")
     total_score = models.IntegerField(default=0, verbose_name="Всего в тесте")
     started_at = models.DateTimeField(auto_now_add=True)

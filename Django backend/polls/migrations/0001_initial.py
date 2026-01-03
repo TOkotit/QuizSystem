@@ -32,7 +32,7 @@ class Migration(migrations.Migration):
             name='Poll',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('owner', models.IntegerField(blank=True, null=True, verbose_name='ID создателя')),
+                ('owner', models.CharField(blank=True, null=True, verbose_name='ID создателя')),
                 ('title', models.TextField(verbose_name='Название опроса')),
                 ('pub_date', models.DateTimeField(default=django.utils.timezone.now)),
                 ('active', models.BooleanField(default=True)),
@@ -61,7 +61,7 @@ class Migration(migrations.Migration):
             name='Test',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('owner', models.IntegerField(blank=True, null=True, verbose_name='ID создателя')),
+                ('owner', models.CharField(blank=True, null=True, verbose_name='ID создателя')),
                 ('title', models.TextField(verbose_name='Название теста')),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('completion_time', models.IntegerField(blank=True, null=True, verbose_name='Время на прохождение (мин)')),
@@ -79,7 +79,7 @@ class Migration(migrations.Migration):
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('choice', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='polls.choice')),
                 ('poll', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='votes', to='polls.poll')),
-                ('user', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL)),
+                ('user', models.CharField(blank=True, null=True)),
             ],
             options={
                 'db_table': 'votes',
@@ -94,7 +94,7 @@ class Migration(migrations.Migration):
                 ('started_at', models.DateTimeField(auto_now_add=True)),
                 ('completed_at', models.DateTimeField(blank=True, null=True)),
                 ('test', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='attempts', to='polls.test')),
-                ('user', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                ('user', models.CharField(blank=True, null=True)),
             ],
             options={
                 'db_table': 'test_attempts',
