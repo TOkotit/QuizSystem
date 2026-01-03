@@ -61,6 +61,18 @@ export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
         }
     };
 
+    const handleSetPreviousTask = () => {
+        if (activeTaskIndex > 0){
+            setActiveTaskIndex(activeTaskIndex - 1)
+        }
+    }
+
+    const handleSetNextTask = () => {
+        if (activeTaskIndex < tasks.length-1){
+            setActiveTaskIndex(activeTaskIndex + 1)
+        }
+    }
+
     const handleOptionChange = (index, value) => {
         let newOptions = [...tasks[activeTaskIndex].options];
         newOptions[index] = value;
@@ -91,11 +103,11 @@ export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
     };
     // Стили
     const oneSettingStyle = { 
-        display: 'flex', gap: '10px', alignItems: 'center', 
+        display: 'flex', gap: '10px', alignItems: 'center', whiteSpace: 'nowrap'
     };
     const dateTimeInputStyle = {
         boxSizing: 'border-box', padding: '10px', backgroundColor: '#e0e0e0',
-        border: 'none', fontSize: '14px', outline: 'none', color: '#333', width: '100%'
+        border: 'none', fontSize: '14px', outline: 'none', color: '#333', width: '100%', borderRadius: '10px'
     };
     
     // Стили для табов (вкладок) заданий
@@ -110,7 +122,8 @@ export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
         fontWeight:'bold',
         display: 'flex',
         alignItems: 'center',
-        gap: '5px'
+        gap: '5px',
+        whiteSpace: 'nowrap'
     });
 
     return (
@@ -135,24 +148,34 @@ export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
             </div> 
 
             {/* 3. НАВИГАЦИЯ ПО ЗАДАНИЯМ (ТАБЫ) */}
-            <div style={{ display: 'flex', 
+            <div style={{ display: 'flex',
                 borderBottom: '2px solid #333' }}>
-                {tasks.map((task, index) => (
-                    <div 
-                        key={task.id} 
-                        style={taskTabStyle(index === activeTaskIndex)}
-                        onClick={() => setActiveTaskIndex(index)}
-                    >
-                        Задание {index + 1}
-                        <span 
-                            onClick={(e) => handleDeleteTask(index, e)}
-                            style={{ fontSize: '10px',
-                                fontWeight: 'bold' }}
+                <ActionButton onClick={handleSetPreviousTask}
+                    style={{borderRadius:'10px'}}>
+                    {"←"}
+                </ActionButton>
+                <div style={{ display: 'flex', overflowX: 'auto'}}>
+                    {tasks.map((task, index) => (
+                        <div 
+                            key={task.id} 
+                            style={taskTabStyle(index === activeTaskIndex)}
+                            onClick={() => setActiveTaskIndex(index)}
                         >
-                            ✕
-                        </span>
-                    </div>
-                ))}
+                            Задание {index + 1}
+                            <span 
+                                onClick={(e) => handleDeleteTask(index, e)}
+                                style={{ fontSize: '10px',
+                                    fontWeight: 'bold' }}
+                            >
+                                ✕
+                            </span>
+                        </div>
+                    ))}
+                </div>
+                <ActionButton onClick={handleSetNextTask}
+                    style={{borderRadius:'10px', marginLeft: 'auto'}}>
+                    {"→"}
+                </ActionButton>
             </div>
 
             {/* 4. РЕДАКТОР ТЕКУЩЕГО ЗАДАНИЯ */}
@@ -188,7 +211,7 @@ export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
                         </div>
                         <div 
                             onClick={() => setTaskSettingsVisibility(!taskSettingsVisibility)} 
-                            style={{cursor: 'pointer', fontWeight: 'bold', marginBottom: '10px', display: 'flex'}}
+                            style={{cursor: 'pointer', fontWeight: 'bold', marginBottom: '10px', display: 'flex', gap:'5px'}}
                         >
                             <span>Параметры задания</span>
                             <span>{taskSettingsVisibility ? '▲' : '▼'}</span>
@@ -211,9 +234,11 @@ export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
                                 </select>
                             </div>
                             <div style={oneSettingStyle}>
-                                <span>Баллы:</span>
+                                <span>Баллы: {tasks[activeTaskIndex].score}</span>
                                 <input 
-                                    type="number" 
+                                    type="range" 
+                                    min="1"      
+                                    max="50"
                                     value={tasks[activeTaskIndex].score} 
                                     onChange={(e) => updateActiveTask('score', e.target.value)}
                                     style={dateTimeInputStyle} 
