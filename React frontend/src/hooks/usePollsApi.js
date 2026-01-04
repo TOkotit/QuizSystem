@@ -94,6 +94,7 @@ export const usePollsApi = (externalApiBaseUrl) => {
       .map(text => ({ choice_text: text }));
 
     const payload = {
+      owner_ID: pollData.ownerID,
       title: pollData.title,
       choices,
       is_anonymous: pollSettings.isAnonymous,

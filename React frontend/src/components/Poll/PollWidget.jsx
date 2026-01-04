@@ -7,12 +7,99 @@ import { usePollsApi } from '../../hooks/usePollsApi';
 
 
 const PollWidget = ({ initialTitle, pollId, onSaved }) => {
-    const [pollCreationData, setPollCreationData] = useState({ title: initialTitle || '', options: [''] });
-    const [pollSettingsData, setPollSettingsData] = useState({ isAnonymous: false, multipleAnswers: false, endDate: '', endTime: '' });
+    const [pollCreationData, setPollCreationData] = useState({ 
+        ownerID: '',
+        title: initialTitle || '', 
+        options: [''] 
+    });
+    const [pollSettingsData, setPollSettingsData] = useState({ 
+        isAnonymous: false, 
+        multipleAnswers: false, 
+        endDate: '', 
+        endTime: '' 
+    });
     const [savedPollData, setSavedPollData] = useState(null);
     const [viewMode, setViewMode] = useState('creator');
 
     const { createPoll, loading, error, fetchPoll } = usePollsApi();
+
+    const [currentUserId, setCurrentUserId] = useState(null);
+    
+        useEffect(() => {
+            // 1. Пытаемся взять из localStorage
+            let userId = localStorage.getItem('userId');
+    
+            // 2. Если там нет, пытаемся взять из Cookie (например, 'user_id' или 'session_id')
+            if (!userId) {
+                userId = getCookie('user_id'); 
+            }
+    
+            if (!userId) {
+                // Генерируем случайный ID, если его нет
+                userId = 'anon_' + Math.random().toString(36).substring(2, 11);
+                localStorage.setItem('userId', userId);
+            }
+            
+            if (userId) {
+                setCurrentUserId(userId);
+                console.log("ID пользователя загружен:", userId);
+            }
+        }, []);
+    
+        const getInfo = useCallback((data) => {
+            if (!data) return;
+    
+            console.log("Widget initialized with:", data);
+    
+            const { 
+                widgetId, 
+                userId, 
+                role, 
+                config, 
+                board 
+            } = data;
+    
+            // 1. Обработка Конфигурации (Config)
+            // Предполагаем, что pollId лежит внутри config, если виджет уже был настроен ранее
+            if (config && config.pollId) {
+                // Если есть ID теста, сохраняем его, это триггернет useEffect для загрузки из БД
+                // (Логика уже есть в вашем TestWidget: useEffect на pollId)
+                // Но нам нужно как-то передать этот pollId в пропсы или стейт. 
+                // В текущей архитектуре pollId приходит пропсом, но здесь мы получаем его динамически.
+                // Решение: Добавить локальный стейт для overridePollId или вызывать fetchTest напрямую.
+                
+                // Для примера вызовем fetchTest напрямую, если pollId пришел в конфиге:
+                fetchPoll(config.pollId).then(serverPoll => {
+                    if (serverPoll) {
+                        setPollCreationData({
+                            ownerID: serverPoll.ownerID,
+                            id: serverPoll.id,
+                            title: serverPoll.title,
+                        });
+                        if (serverPoll.settings) {
+                            setPollSettingsData(serverPoll.settings);
+                        }
+                    }
+                });
+            }
+    
+            // 2. Обработка Ролей (Role)
+            // Определяем режим просмотра в зависимости от роли пользователя на доске
+            // 'admin'/'editor' -> могут редактировать ('creator')
+            // 'viewer'/'guest' -> только проходят тест ('display')
+            const canEdit = ['admin', 'editor', 'owner'].includes(role);
+            
+            if (canEdit) {
+                // Если админ, но тест уже создан (есть данные), показываем настройки или превью
+                // Если тест пустой, показываем 'creator'
+                setViewMode(prev => (config?.pollId ? 'display' : 'creator'));
+            } else {
+                // Обычные пользователи всегда видят только режим прохождения
+                setViewMode('display');
+            }
+    
+        
+        }, [fetchPoll]);
 
     useEffect(() => {
         if (!pollId) return;
@@ -62,8 +149,13 @@ const PollWidget = ({ initialTitle, pollId, onSaved }) => {
             alert("Min 1 option required");
             return;
         }
-
+        
         try {
+            setPollCreationData({
+                ownerID: currentUserId,
+                title: pollCreationData.title,
+                options: pollCreationData.options
+            })
             const savedData = await createPoll(pollCreationData, pollSettingsData);
             
             setSavedPollData(savedData);
@@ -96,7 +188,17 @@ const PollWidget = ({ initialTitle, pollId, onSaved }) => {
             onTitleClick={viewMode === 'display' ? toggleCreator : undefined} 
         > 
             {<p style={{color: 'red', textAlign: 'center'}}>{loading ? 'Сохранение...' : error}</p>}
-            
+            <div style={{ position: 'relative' }}>
+                    {/* Маленькая метка с ID в углу для теста */}
+                    <div style={{ 
+                        fontSize: '10px', 
+                        color: '#999', 
+                        textAlign: 'right', 
+                        padding: '0 15px' 
+                    }}>
+                        User ID: {currentUserId}
+                    </div>
+            </div>
             {viewMode === 'creator' && (
                 <PollCreatorContent 
                     onSave={handleSave} 
