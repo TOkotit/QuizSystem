@@ -59,7 +59,8 @@ export const PollCreatorContent = ({ onSave, onDataChange, initialData }) => {
                 padding: '14px 16px', 
                 marginBottom: '20px',
                 color: '#333',
-                fontWeight: 'bold'
+                fontWeight: 'bold',
+                borderRadius: '15px'
             }} 
         />
       </div>
@@ -81,7 +82,7 @@ export const PollCreatorContent = ({ onSave, onDataChange, initialData }) => {
               placeholder={`Вариант ${index + 1}`}
               value={opt}
               onChange={(e) => handleOptionChange(index, e.target.value)}
-              style={{ flexGrow: 1, marginBottom: '10px' }}
+              style={{ flexGrow: 1, marginBottom: '10px',borderRadius: '15px' }}
             />
           </div>
         ))}
@@ -93,7 +94,7 @@ export const PollCreatorContent = ({ onSave, onDataChange, initialData }) => {
           <ActionButton 
               // onSave вызывает handleSave в PollWidget, который делает API-вызов
               onClick={() => onSave()} 
-              style={{ width: '100%' }}
+              style={{ width: '100%', borderRadius: '15px' }}
           >
               Сохранить опрос
           </ActionButton>

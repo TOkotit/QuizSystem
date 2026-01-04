@@ -64,6 +64,7 @@ export const TestSettingsContent = ({ onDataChange, initialData, toggleSettings 
               <span>Время (мин):</span>
               <input type="number" value={completionTime} 
               onChange={(e) => setCompletionTime(e.target.value)} 
+              placeholder='Неограниченно'
               style={dateTimeInputStyle} />
           </div>
           <div style={oneSettingStyle}>
@@ -79,7 +80,8 @@ export const TestSettingsContent = ({ onDataChange, initialData, toggleSettings 
               <span style={{ }}>Кол-во попыток:</span>
               <input type="number" value={attemptNumber} 
                 onChange={(e) => setAttemptNumber(e.target.value)} 
-                style={dateTimeInputStyle} />
+                style={dateTimeInputStyle}
+                placeholder='Неограниченно' />
           </div>
       </div>
 

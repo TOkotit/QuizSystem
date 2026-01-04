@@ -24,7 +24,7 @@ export const PollSettingsContent = ({ onDataChange, initialData, toggleSettings 
       padding: '12px 16px',
       backgroundColor: '#e0e0e0',
       border: 'none',
-      borderRadius: '0px',
+      borderRadius: '15px',
       fontSize: '16px',
       color: '#333',
       outline: 'none',

@@ -274,6 +274,7 @@ export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
                                             placeholder={`Вариант ${index + 1}`}
                                             value={opt}
                                             onChange={(e) => handleOptionChange(index, e.target.value)}
+                                            style={{borderRadius: '15px'}}
                                         />
                                         </div>
                                         ))}
@@ -292,6 +293,7 @@ export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
                                             placeholder={`Вариант ${index + 1}`}
                                             value={opt}
                                             onChange={(e) => handleOptionChange(index, e.target.value)}
+                                            style={{borderRadius: '15px'}}
                                         />
                                         </div>
                                         ))}
