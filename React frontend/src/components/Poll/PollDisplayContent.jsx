@@ -41,44 +41,29 @@ export const PollDisplayContent = ({ pollData, setPollData }) => {
         });
     };
 
-    const handleVote = useCallback(async () => {
-        setError(null);
-        let selectedIds = [];
-        if (multiple_answers) {
-            selectedIds = selectedCheckboxes;
-        } else if (selectedOption) {
-            selectedIds = [selectedOption];
-        }
+const handleVote = async () => {
+    // Если ничего не выбрано - выходим
+    if (!selectedOption || (Array.isArray(selectedOption) && selectedOption.length === 0)) return;
 
-        if (selectedIds.length === 0) {
-            setError('Пожалуйста, выберите вариант ответа.');
-            return;
-        }
+    // Достаем то самое имя пользователя, которое "другой человек" сохранил в localStorage
+    const currentUserName = localStorage.getItem('userId') || 'Anonymous';
 
-try {
-            let updatedData = null;
-            
-            // Если одиночный выбор, отправляем только первый (и единственный) ID
-            if (!multiple_answers) {
-                updatedData = await votePoll(pollId, parseInt(selectedIds[0]));
-            } else {
-                // Если множественный выбор, отправляем голоса по одному
-                for (const choiceId of selectedIds) {
-                    updatedData = await votePoll(pollId, parseInt(choiceId));
-                }
-            }
-            
-            // Обновляем состояние родителя новыми данными с бэкенда 
-            if (updatedData) {
-                setPollData(updatedData);
-                setIsSaved(true);
-            }
-        } catch (e) {
-            console.error("Ошибка при голосовании:", e);
-            // Улучшенная обработка ошибки с бэкенда
-            setError(e.message || 'Неизвестная ошибка при отправке голоса.');
+    try {
+        const success = await votePoll(pollId, { 
+            choice_id: selectedOption,
+            user: currentUserName // ОТПРАВЛЯЕМ ИМЯ В БАЗУ
+        });
+
+        if (success) {
+            setIsSaved(true);
+            // Обновляем данные опроса, чтобы сразу увидеть результаты
+            if (fetchPoll) fetchPoll(pollId).then(data => setPollData(data));
         }
-         }, [pollId, multiple_answers, selectedOption, selectedCheckboxes, votePoll, setPollData, setError]);
+    } catch (err) {
+        console.error("Ошибка при голосовании:", err);
+        setError("Не удалось сохранить голос");
+    }
+};
 
          const isVoteDisabled = isSaved || loading || (!multiple_answers && !selectedOption) || (multiple_answers && selectedCheckboxes.length === 0);
 

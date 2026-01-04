@@ -55,22 +55,31 @@ export const TestDisplayContent = ({ testData }) => {
 
     // ОТПРАВКА: Исправлено под твой urls.py (/api/polls/tests/submit/)
     const handleFinishTest = async () => {
-        if (!testId) return;
-        try {
-            const payload = {
-                test: testId,
-                answers: completedTasks.map(task => ({
-                    task_id: task.id,
-                    answer_text: task.completedText,
-                    answer_single: task.completedRadioOption,
-                    answer_multiple: task.completedBoxOptions
-                }))
-            };
+        // Достаем имя пользователя
+        const currentUserName = localStorage.getItem('userId') || 'Anonymous';
 
-            const response = await submitAttempt(testId, payload);
-            setResultData(response);
+        // Собираем данные для отправки (test_id, ответы и имя пользователя)
+        const payload = {
+            test: testId,
+            user: currentUserName, // ОТПРАВЛЯЕМ ИМЯ В БАЗУ
+            answers: completedTasks.map(task => ({
+                task: task.id,
+                answer_text: task.completedText,
+                selected_options: task.type === 'single' 
+                    ? [task.completedRadioOption] 
+                    : task.completedBoxOptions
+            }))
+        };
+
+        try {
+            const result = await submitAttempt(payload);
+            if (result) {
+                setResultData(result); // Показываем результат (баллы)
+                setTestBeginningMode(false);
+            }
         } catch (err) {
-            console.error("Payload error:", err);
+            console.error("Ошибка при отправке теста:", err);
+            alert("Ошибка при сохранении результатов теста");
         }
     };
 
