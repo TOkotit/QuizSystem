@@ -144,24 +144,32 @@ const PollWidget = ({ initialTitle, pollId, onSaved }) => {
     }, [pollId, fetchPoll]);
 
     const handleSave = async () => {
+    // 1. Фильтруем пустые варианты
         const non_empty_options = pollCreationData.options.filter(o => o.trim() !== '');
+        
+        // 2. Валидация
         if (!pollCreationData.title.trim() || non_empty_options.length < 1) {
-            alert("Min 1 option required");
+            alert("Заполните название и хотя бы один вариант ответа");
             return;
         }
         
         try {
-            setPollCreationData({
-                ownerID: currentUserId,
-                title: pollCreationData.title,
-                options: pollCreationData.options
-            })
-            const savedData = await createPoll(pollCreationData, pollSettingsData);
+            // 3. Собираем данные для отправки вручную.
+            // Мы НЕ ждем обновления стейта, а берем всё свежее прямо сейчас.
+            const dataToSend = {
+                ...pollCreationData,
+                options: non_empty_options,
+                owner: currentUserId // Добавляем имя пользователя как владельца
+            };
+
+            const savedData = await createPoll(dataToSend, pollSettingsData);
             
+            // 4. Обновляем локальный стейт данными, которые вернул бэкенд (там уже будет id)
             setSavedPollData(savedData);
 
-            if (typeof onSaved === 'function') {
-                onSaved(savedData);
+            // 5. Уведомляем React Flow (чтобы в ноде сохранился ID для автозагрузки)
+            if (typeof onSaved === 'function' && savedData?.id) {
+                onSaved(savedData.id);
             }
             
             setViewMode('display');

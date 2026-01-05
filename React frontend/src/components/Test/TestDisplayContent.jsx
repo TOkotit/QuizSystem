@@ -19,6 +19,7 @@ export const TestDisplayContent = ({ testData }) => {
     // ЖЕСТКАЯ ПРОВЕРКА: Инициализация как в рабочих опросах
     useEffect(() => {
         if (tasks && Array.isArray(tasks) && tasks.length > 0) {
+            console.log("Инициализация задач в Display:", tasks);
             const initial = tasks.map((task) => ({
                 id: task.id,
                 question: task.question,
@@ -26,12 +27,12 @@ export const TestDisplayContent = ({ testData }) => {
                 score: task.score,
                 options: Array.isArray(task.options) ? task.options : [],
                 completedText: '',
-                completedRadioOption: '',
-                completedBoxOptions: [],
+                completedRadioOptionId: '', 
+                completedBoxOptionIds: [],
             }));
             setCompletedTasks(initial);
         }
-    }, [testData, tasks]);
+    }, [tasks, testData]);
 
     const updateActiveCompletedTask = (field, value) => {
         setCompletedTasks(prev => {
@@ -53,24 +54,47 @@ export const TestDisplayContent = ({ testData }) => {
         updateActiveCompletedTask('completedBoxOptions', nextSelected);
     };
 
-    // ОТПРАВКА: Исправлено под твой urls.py (/api/polls/tests/submit/)
+    const getOptionIdByText = (task, text) => {
+        if (!text) return null;
+        const found = task.options.find(o => String(o.text) === String(text));
+        return found ? found.id : null;
+    };
+
+
     const handleFinishTest = async () => {
-        if (!testId) return;
-        try {
-            const payload = {
+        const currentUserName = localStorage.getItem('userId') || 'Anonymous';
+
+        // Собираем данные для отправки (test_id, ответы и имя пользователя)
+        const payload = {
                 test: testId,
-                answers: completedTasks.map(task => ({
-                    task_id: task.id,
-                    answer_text: task.completedText,
-                    answer_single: task.completedRadioOption,
-                    answer_multiple: task.completedBoxOptions
-                }))
+                user: currentUserName,
+                answers: completedTasks.map(task => {
+                    let selected_ids = [];
+                    if (task.type === 'single') {
+                        const id = getOptionIdByText(task, task.completedRadioOption);
+                        if (id) selected_ids = [id];
+                    } else if (task.type === 'multiple') {
+                        selected_ids = task.completedBoxOptions
+                            .map(text => getOptionIdByText(task, text))
+                            .filter(id => id !== null);
+                    }
+
+                    return {
+                        task: task.id,
+                        answer_text: task.completedText,
+                        selected_options: selected_ids
+                    };
+                })
             };
 
-            const response = await submitAttempt(testId, payload);
-            setResultData(response);
+        try {
+            const result = await submitAttempt(payload);
+            if (result) {
+                setResultData(result);
+                setTestBeginningMode(false);
+            }
         } catch (err) {
-            console.error("Payload error:", err);
+            console.error("Ошибка:", err);
         }
     };
 
@@ -79,13 +103,12 @@ export const TestDisplayContent = ({ testData }) => {
         return (
             <div style={{ textAlign: 'center', padding: '20px', color: '#000' }}>
                 <h3 style={{color: '#28a745'}}>Тест завершен!</h3>
-                <p style={{fontSize: '18px'}}>Результат: <b>{resultData.score}</b> / {resultData.max_score}</p>
+                <p style={{fontSize: '18px'}}>Результат: <b>{resultData.score_obtained}</b> / {resultData.total_score}</p>
                 <ActionButton onClick={() => window.location.reload()}>ОК</ActionButton>
             </div>
         );
     }
 
-    // ЗАЩИТА ОТ "map of undefined": Если задач нет в стейте, не рендерим внутренности
     if (!testBeginningMode && completedTasks.length === 0) {
         return <div style={{color: '#000', padding: '20px'}}>Загрузка...</div>;
     }
@@ -139,10 +162,10 @@ export const TestDisplayContent = ({ testData }) => {
                             completedTasks[activeTaskIndex].options.map((opt, i) => (
                                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px' }}>
                                     <RadioButton 
-                                        checked={completedTasks[activeTaskIndex].completedRadioOption === opt}
-                                        onChange={() => updateActiveCompletedTask('completedRadioOption', opt)}
+                                        checked={completedTasks[activeTaskIndex].completedRadioOption === opt.text}
+                                        onChange={() => updateActiveCompletedTask('completedRadioOption', opt.text)}
                                     />
-                                    <label>{opt}</label>
+                                    <label>{opt.text}</label>
                                 </div>
                         ))}
 
@@ -150,10 +173,10 @@ export const TestDisplayContent = ({ testData }) => {
                             completedTasks[activeTaskIndex].options.map((opt, i) => (
                                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px' }}>
                                     <CheckboxSquare 
-                                        checked={completedTasks[activeTaskIndex].completedBoxOptions.includes(opt)}
-                                        onChange={() => handleCheckboxChange(opt)}
+                                        checked={completedTasks[activeTaskIndex].completedBoxOptions.includes(opt.text)}
+                                        onChange={() => handleCheckboxChange(opt.text)}
                                     />
-                                    <label>{opt}</label>
+                                    <label>{opt.text}</label>
                                 </div>
                         ))}
                     </div>
