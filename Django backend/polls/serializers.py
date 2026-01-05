@@ -20,23 +20,39 @@ class PollDetailSerializer(serializers.ModelSerializer):
     choices = ChoiceDetailSerializer(many=True, read_only=True)
     total_votes = serializers.IntegerField(read_only=True)
     is_active = serializers.SerializerMethodField()
+    # НОВОЕ ПОЛЕ: список проголосовавших
+    voted_users = serializers.SerializerMethodField()
+    all_votes = serializers.SerializerMethodField()
 
     class Meta:
         model = Poll
         fields = (
             'id', 'title', 'owner', 'is_anonymous', 'multiple_answers', 'end_date',
-            'created_at', 'choices', 'total_votes', 'is_active'
+            'created_at', 'choices', 'total_votes', 'is_active', 'voted_users', 'all_votes'
         )
         read_only_fields = ['id', 'created_at', 'total_votes']
 
     def get_is_active(self, obj):
         return obj.active and (obj.end_date is None or obj.end_date > timezone.now())
+    
+    # Метод для получения списка имен/ID пользователей
+    def get_voted_users(self, obj):
+        # Получаем все уникальные значения из поля user модели Vote, относящиеся к этому опросу
+        return list(Vote.objects.filter(choice__poll=obj).values_list('user', flat=True).distinct())
+
+    def get_all_votes(self, obj):
+        # 1. Находим все голоса, которые относятся к вариантам этого опроса
+        # 2. Используем .select_related() не нужно, так как мы берем данные только из Vote
+        votes_queryset = Vote.objects.filter(choice__poll=obj)
+        
+        # 3. Возвращаем сериализованные данные
+        return VoteSerializer(votes_queryset, many=True).data
 
 
 class ChoiceCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Choice
-        fields = ('choice_text',)
+        fields = ('id', 'choice_text', 'votes_count')
 
 
 class PollCreateSerializer(serializers.ModelSerializer):
@@ -56,7 +72,7 @@ class PollCreateSerializer(serializers.ModelSerializer):
 
 
 class VoteSerializer(serializers.ModelSerializer):
-    choice_id = serializers.IntegerField(write_only=True)
+    choice_id = serializers.IntegerField()
     # Разрешаем принимать строку user
     user = serializers.CharField(required=False, allow_blank=True)
 
