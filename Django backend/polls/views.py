@@ -6,7 +6,7 @@ from django.http import JsonResponse
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import ensure_csrf_cookie
 
-from .models import Poll, Test
+from .models import Poll, Test, TestAttempt
 from .serializers import (
     PollCreateSerializer,
     PollDetailSerializer,
@@ -89,8 +89,13 @@ class TestRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class TestAttemptCreateAPIView(generics.CreateAPIView):
+    queryset = TestAttempt.objects.all()
     serializer_class = TestAttemptSerializer
     permission_classes = [AllowAny]
 
-    # Всю логику подсчета баллов я перенес в TestAttemptSerializer.create
-    # Здесь оставляем стандартный метод, чтобы не дублировать код.
+    def post(self, request, *args, **kwargs):
+        print("DEBUG: Данные попытки теста:", request.data)
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            print("DEBUG: Ошибки валидации:", serializer.errors)
+        return super().post(request, *args, **kwargs)

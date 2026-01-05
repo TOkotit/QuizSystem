@@ -39,30 +39,24 @@ const TestWidget = ({ initialTitle, pollId }) => {
     useEffect(() => {
         let isMounted = true;
 
-        if (pollId && fetchTest) {
-            console.log("TestWidget: Запрос данных для ID:", pollId);
+        if (pollId) {
             fetchTest(pollId).then(data => {
                 if (data && isMounted) {
-                    console.log("TestWidget: Данные получены:", data);
                     setTestCreationData({
                         id: data.id,
                         title: data.title,
                         tasks: data.tasks || [],
-                        activeTaskIndex: 0
                     });
                     if (data.settings) setTestSettingsData(data.settings);
-                    
                     setIsDataLoaded(true);
-                    setViewMode('display'); 
                 }
             }).catch(err => {
-                console.error("Ошибка загрузки теста:", err);
+                console.error("Ошибка загрузки:", err);
                 setIsDataLoaded(true);
             });
         } else {
             setIsDataLoaded(true);
         }
-
         return () => { isMounted = false; };
     }, [pollId, fetchTest]);
 
@@ -132,9 +126,15 @@ const TestWidget = ({ initialTitle, pollId }) => {
                 />
             )}
             
-            {viewMode === 'display' && (
+            {viewMode === 'display' && isDataLoaded &&(
                 <TestDisplayContent 
-                    testData={{ ...testCreationData, settings: testSettingsData }}
+                    testId={testCreationData.id || pollId}
+                    testData={{
+                        ...testCreationData,
+                        id: testCreationData.id || pollId,
+                        settings: testSettingsData,
+                        tasks: testCreationData.tasks || []
+                     }}
                 />
             )}
             
