@@ -27,25 +27,31 @@ export const StyledInput = ({ placeholder, value, onChange, style, autoFocus, ty
 );
 
 // --- [2] ATOM: ActionButton ---
-export const ActionButton = ({ onClick, children, style }) => (
+export const ActionButton = ({ onClick, children, style, disabled }) => (
   <button
-    onClick={onClick}
+    onClick={!disabled ? onClick : undefined} // Блокируем клик, если disabled
+    disabled={disabled}                       // Стандартный атрибут HTML
     className="nodrag" 
     style={{
       padding: '10px 30px',
-      backgroundColor: '#d9d9d9',
+      backgroundColor: disabled ? '#f0f0f0' : '#d9d9d9', // Светлее, если выключена
       border: 'none',
       borderRadius: '0px',
       fontSize: '18px',
-      color: '#000',
-      cursor: 'pointer',
+      color: disabled ? '#999' : '#000',               // Серый текст, если выключена
+      cursor: disabled ? 'not-allowed' : 'pointer',    // Меняем курсор
       fontWeight: '400',
       transition: 'background-color 0.2s',
       whiteSpace: 'nowrap',
+      opacity: disabled ? 0.7 : 1,                     // Добавляем прозрачность
       ...style
     }}
-    onMouseOver={(e) => e.target.style.backgroundColor = '#c0c0c0'}
-    onMouseOut={(e) => e.target.style.backgroundColor = '#d9d9d9'}
+    onMouseOver={(e) => {
+      if (!disabled) e.target.style.backgroundColor = '#c0c0c0';
+    }}
+    onMouseOut={(e) => {
+      if (!disabled) e.target.style.backgroundColor = style?.backgroundColor || '#d9d9d9';
+    }}
   >
     {children}
   </button>
