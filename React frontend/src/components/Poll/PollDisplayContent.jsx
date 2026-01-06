@@ -106,7 +106,7 @@ const handleVote = async () => {
             </div>
             
             <div style={{ fontSize: '14px', color: '#666', marginBottom: '10px' }}>
-                {anonymityStatus} | {displayEndDate} | Голосов: {total_votes || 0}
+                {anonymityStatus} | {displayEndDate} | Голосов: {voted_users.length || 0}
             </div>
 
             {error && <p style={{color: 'red'}}>{error}</p>}

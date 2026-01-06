@@ -6,7 +6,7 @@ import { PollDisplayContent } from './PollDisplayContent';
 import { usePollsApi } from '../../hooks/usePollsApi';
 
 
-const PollWidget = ({ initialTitle, pollId, onSaved }) => {
+const PollWidget = ({ initialTitle, pollId}) => {
     const [pollCreationData, setPollCreationData] = useState({ 
         ownerID: '',
         title: initialTitle || '', 
