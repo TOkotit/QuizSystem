@@ -9,6 +9,7 @@ export const PollDisplayContent = ({ pollData, setPollData }) => {
         title, 
         choices, // Массив объектов {id, choice_text, votes_count}
         all_votes = [],
+        voted_users = [],
         is_anonymous, 
         multiple_answers, 
         end_date,
@@ -25,8 +26,8 @@ export const PollDisplayContent = ({ pollData, setPollData }) => {
 
     // Подсчет процентов на основе данных с бэкенда
     const getPercentage = (votes) => {
-        if (!total_votes || total_votes === 0) return "0%";
-        return `${Math.round((votes / total_votes) * 100)}%`;
+        if (!voted_users || voted_users.length === 0) return "0%";
+        return `${Math.round((votes / voted_users.length) * 100)}%`;
     };
     
     const [isSaved, setIsSaved] = useState(all_votes.some(v => v.user === String(currentUserId)));

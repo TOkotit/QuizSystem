@@ -115,13 +115,13 @@ class TaskSerializer(serializers.ModelSerializer):
 
     # ВОТ ЭТО ИСПРАВЛЯЕТ ОШИБКУ СОХРАНЕНИЯ:
     # Связываем фронтенд (type) с бэкендом (task_type)
-    type = serializers.CharField(source='task_type')
+    task_type = serializers.CharField()
     # Связываем фронтенд (correctText) с бэкендом (correct_text)
-    correctText = serializers.CharField(source='correct_text', required=False, allow_blank=True)
+    correct_text = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = Task
-        fields = ('id', 'question', 'type', 'score', 'options', 'correctText')
+        fields = ('id', 'question', 'task_type', 'score', 'options', 'correct_text')
 
 
 class TestSerializer(serializers.ModelSerializer):

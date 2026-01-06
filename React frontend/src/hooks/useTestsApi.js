@@ -61,9 +61,26 @@ const createTest = useCallback(async (testCreationData, testSettingsData) => {
       const payload = {
         title: testCreationData.title,
         owner: localStorage.getItem('userId') || 'Anonymous',
-        tasks: testCreationData.tasks,
-        settings: testSettingsData
+        tasks: testCreationData.tasks.map(task => ({
+            question: task.question,
+            task_type: task.type, // исправляем type -> task_type
+            score: task.score,
+            correct_text: task.correctText, // исправляем
+            options: task.options.filter(o => o.trim() !== '').map(opt => ({
+                text: opt,
+                is_correct: task.type === 'single' 
+                    ? opt === task.correctRadioOption 
+                    : task.correctBoxOptions.includes(opt)
+            }))
+        })),
+        
+        // Маппинг настроек из camelCase в snake_case
+        completion_time: testSettingsData.completionTime === '' ? null : parseInt(testSettingsData.completionTime),
+        attempt_number: testSettingsData.attemptNumber === '' ? null : parseInt(testSettingsData.attemptNumber),
+        // Собираем end_date из даты и времени, если нужно, или передаем как есть
+        end_date: testSettingsData.endDate ? `${testSettingsData.endDate}T${testSettingsData.endTime || '00:00'}` : null
       };
+
       return await apiFetch(API_BASE_URL, {
         method: 'POST',
         body: JSON.stringify(payload)
@@ -74,7 +91,7 @@ const createTest = useCallback(async (testCreationData, testSettingsData) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+}, []);
 
   // Отправка результатов (попытки) теста
 const submitAttempt = useCallback(async (payload) => {

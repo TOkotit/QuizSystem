@@ -320,7 +320,7 @@ export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
                     + Добавить задание
                 </ActionButton>
 
-                <ActionButton onClick={() => onSave(tasks)}
+                <ActionButton onClick={() => onSave()}
                     style={{borderRadius:'10px'}}>
                     Сохранить тест
                 </ActionButton>
