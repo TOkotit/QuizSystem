@@ -44,6 +44,18 @@ export const TestDisplayContent = ({ testData }) => {
         });
     };
 
+    const handleSetPreviousTask = () => {
+        if (activeTaskIndex > 0){
+            setActiveTaskIndex(activeTaskIndex - 1)
+        }
+    }
+
+    const handleSetNextTask = () => {
+        if (activeTaskIndex < tasks.length-1){
+            setActiveTaskIndex(activeTaskIndex + 1)
+        }
+    }
+
     const handleCheckboxChange = (optionValue) => {
         const currentTask = completedTasks[activeTaskIndex];
         if (!currentTask) return;
@@ -135,30 +147,43 @@ export const TestDisplayContent = ({ testData }) => {
             ) : (
                 <>
                     {/* Табы вопросов */}
-                    <div style={{ display: 'flex', borderBottom: '2px solid #333', marginBottom: '15px', overflowX: 'auto' }}>
-                        {completedTasks.map((_, index) => (
-                            <div 
-                                key={index} 
-                                onClick={() => setActiveTaskIndex(index)}
-                                style={{
-                                    padding: '8px 12px',
-                                    cursor: 'pointer',
-                                    backgroundColor: index === activeTaskIndex ? '#00a2ff' : '#eee',
-                                    color: index === activeTaskIndex ? '#fff' : '#000',
-                                    marginRight: '2px',
-                                    borderRadius: '5px 5px 0 0'
-                                }}
-                            >
-                                {index + 1}
-                            </div>
-                        ))}
-                    </div>
+                                <div style={{ display: 'flex',
+                                    borderBottom: '2px solid #333' }}>
+                                    <ActionButton onClick={handleSetPreviousTask}
+                                        style={{borderRadius:'10px'}}>
+                                        ←
+                                    </ActionButton>
+                                    <div style={{ display: 'flex', overflowX: 'auto' }}>
+                                        {completedTasks.map((_, index) => (
+                                            <div 
+                                                key={index}
+                                                onClick={() => setActiveTaskIndex(index)}
+                                                style={{
+                                                    padding: '8px 12px',
+                                                    cursor: 'pointer',
+                                                    backgroundColor: index === activeTaskIndex ? '#00a2ff' : '#eee',
+                                                    color: index === activeTaskIndex ? '#fff' : '#000',
+                                                    marginRight: '2px',
+                                                    borderRadius: '5px 5px 0 0',
+                                                    minWidth:'25px',
+                                                    textAlign: 'center'
+                                                }}
+                                            >
+                                                {index + 1}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <ActionButton onClick={handleSetNextTask}
+                                        style={{borderRadius:'10px', marginLeft: 'auto'}}>
+                                        →
+                                    </ActionButton>
+                                </div>
                     {/* область самого задания */}
                     <div style={{ color: '#000' }}>
                         {/* текст задания */}
                         <p style={{fontWeight: 'bold'}}>{completedTasks[activeTaskIndex]?.question}</p>
 
-                        <p style={{fontWeight: 'bold'}}> дебаг тип задания: {String(completedTasks[activeTaskIndex]?.type)}</p>
+                        {/* <p style={{fontWeight: 'bold'}}> дебаг тип задания: {String(completedTasks[activeTaskIndex]?.type)}</p> */}
                         
                         {/* тип текст */}
                         {completedTasks[activeTaskIndex]?.type === 'text' && (
@@ -212,6 +237,14 @@ export const TestDisplayContent = ({ testData }) => {
                                     </div>   
                                 </div> 
                         ))}
+                    </div>
+                    {/* кнопка дальше */}
+                    <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
+                        {activeTaskIndex !== completedTasks.length - 1 && (
+                            <ActionButton onClick={handleSetNextTask}>
+                                Дальше
+                            </ActionButton>
+                        )}
                     </div>
                     {/* завершение теста */}
                     <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>

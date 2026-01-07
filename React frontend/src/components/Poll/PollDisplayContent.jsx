@@ -11,7 +11,7 @@ export const PollDisplayContent = ({ pollData, setPollData }) => {
         all_votes = [],
         voted_users = [],
         is_anonymous, 
-        multiple_answers, 
+        multiple_answers,
         end_date,
         total_votes // Общее кол-во голосов (приходит с бэкенда)
     } = pollData;
