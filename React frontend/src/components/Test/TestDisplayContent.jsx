@@ -129,7 +129,7 @@ export const TestDisplayContent = ({ testData }) => {
                     {/* прошлые попытки */}
                     <div>
                         <p style={{fontSize: '18px'}}>Результаты: </p>
-                        
+
                     </div>
                 </div>
             ) : (
@@ -160,6 +160,7 @@ export const TestDisplayContent = ({ testData }) => {
 
                         <p style={{fontWeight: 'bold'}}> дебаг тип задания: {String(completedTasks[activeTaskIndex]?.type)}</p>
                         
+                        {/* тип текст */}
                         {completedTasks[activeTaskIndex]?.type === 'text' && (
                             <textarea 
                                 value={completedTasks[activeTaskIndex].completedText}
@@ -168,26 +169,48 @@ export const TestDisplayContent = ({ testData }) => {
                             />
                         )}
 
+                        {/* тип один выбор */}
                         {completedTasks[activeTaskIndex]?.type === 'single' && 
                             completedTasks[activeTaskIndex].options.map((opt, i) => (
-                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px' }}>
+                                <div key={i} onClick={() => updateActiveCompletedTask('completedRadioOptionId', opt.id)} 
+                                    style={{ display: 'flex', alignItems: 'center', marginBottom: '15px', cursor: 'pointer', gap:"10px" }}>
                                     <RadioButton 
-                                        checked={completedTasks[activeTaskIndex].completedRadioOptionId === opt.text}
-                                        onChange={() => updateActiveCompletedTask('completedRadioOptionId', opt.text)}
+                                        checked={completedTasks[activeTaskIndex].completedRadioOptionId === opt.id}
+                                        onChange={() => updateActiveCompletedTask('completedRadioOptionId', opt.id)}
                                     />
-                                    <label>{opt.text}</label>
-                                </div>
+                                    <div style={{ flexGrow: 1, 
+                                        display: 'flex', 
+                                        justifyContent: 'space-between', 
+                                        backgroundColor: completedTasks[activeTaskIndex].completedRadioOptionId === opt.id ? '#d0d0d0' : '#e0e0e0', 
+                                        padding: '12px 16px', 
+                                        borderRadius: "10px", 
+                                        position: 'relative', 
+                                        overflow: 'hidden' }}>
+                                        <span >{opt.text}</span>
+                                    </div>   
+                                </div> 
                         ))}
 
+                        {/* тип несколько ответов */}
                         {completedTasks[activeTaskIndex]?.type === 'multiple' && 
                             completedTasks[activeTaskIndex].options.map((opt, i) => (
-                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px' }}>
+                                <div key={i} onClick={() => handleCheckboxChange(opt.id)} 
+                                    style={{ display: 'flex', alignItems: 'center', marginBottom: '15px', cursor: 'pointer', gap:"10px" }}>
                                     <CheckboxSquare 
-                                        checked={completedTasks[activeTaskIndex].completedBoxOptionIds.includes(opt.text)}
-                                        onChange={() => handleCheckboxChange(opt.text)}
+                                        checked={completedTasks[activeTaskIndex].completedBoxOptionIds.includes(opt.id)}
+                                        onChange={() => handleCheckboxChange(opt.id)}
                                     />
-                                    <label>{opt.text}</label>
-                                </div>
+                                    <div style={{ flexGrow: 1, 
+                                        display: 'flex', 
+                                        justifyContent: 'space-between', 
+                                        backgroundColor: completedTasks[activeTaskIndex].completedBoxOptionIds.includes(opt.id) ? '#d0d0d0' : '#e0e0e0', 
+                                        padding: '12px 16px', 
+                                        borderRadius: "10px", 
+                                        position: 'relative', 
+                                        overflow: 'hidden' }}>
+                                        <span >{opt.text}</span>
+                                    </div>   
+                                </div> 
                         ))}
                     </div>
                     {/* завершение теста */}
