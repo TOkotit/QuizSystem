@@ -21,7 +21,6 @@ const PollWidget = ({ initialTitle, pollId}) => {
     const [savedPollData, setSavedPollData] = useState(null);
     const [viewMode, setViewMode] = useState('creator');
 
-    const [allVotesData, setAllVotesData] = useState(null);
     const { createPoll, loading, error, fetchPoll } = usePollsApi();
 
     const [currentUserId, setCurrentUserId] = useState();
@@ -228,7 +227,6 @@ const PollWidget = ({ initialTitle, pollId}) => {
                 <PollDisplayContent 
                     pollData={savedPollData} 
                     setPollData={setSavedPollData} 
-                    allVotesData={allVotesData}
                 />
             )}
 

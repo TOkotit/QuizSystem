@@ -23,7 +23,7 @@ export const TestDisplayContent = ({ testData }) => {
             const initial = tasks.map((task) => ({
                 id: task.id,
                 question: task.question,
-                type: task.type,
+                type: task.task_type,
                 score: task.score,
                 options: Array.isArray(task.options) ? task.options : [],
                 completedText: '',
@@ -32,7 +32,7 @@ export const TestDisplayContent = ({ testData }) => {
             }));
             setCompletedTasks(initial);
         }
-    }, [tasks, testData]);
+    }, []);
 
     const updateActiveCompletedTask = (field, value) => {
         setCompletedTasks(prev => {
@@ -47,11 +47,11 @@ export const TestDisplayContent = ({ testData }) => {
     const handleCheckboxChange = (optionValue) => {
         const currentTask = completedTasks[activeTaskIndex];
         if (!currentTask) return;
-        const currentSelected = currentTask.completedBoxOptions || [];
+        const currentSelected = currentTask.completedBoxOptionIds || [];
         const nextSelected = currentSelected.includes(optionValue)
             ? currentSelected.filter(item => item !== optionValue)
             : [...currentSelected, optionValue];
-        updateActiveCompletedTask('completedBoxOptions', nextSelected);
+        updateActiveCompletedTask('completedBoxOptionIds', nextSelected);
     };
 
     const getOptionIdByText = (task, text) => {
@@ -71,10 +71,10 @@ export const TestDisplayContent = ({ testData }) => {
                 answers: completedTasks.map(task => {
                     let selected_ids = [];
                     if (task.type === 'single') {
-                        const id = getOptionIdByText(task, task.completedRadioOption);
+                        const id = getOptionIdByText(task, task.completedRadioOptionId);
                         if (id) selected_ids = [id];
                     } else if (task.type === 'multiple') {
-                        selected_ids = task.completedBoxOptions
+                        selected_ids = task.completedBoxOptionIds
                             .map(text => getOptionIdByText(task, text))
                             .filter(id => id !== null);
                     }
@@ -117,6 +117,7 @@ export const TestDisplayContent = ({ testData }) => {
         <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
             <h3 style={{ color: '#000', marginBottom: '15px' }}>{title}</h3>
             
+            {/* начало теста */}
             {testBeginningMode ? (
                 <div style={{color:'#000'}}>
                     <div style={{marginBottom: '15px'}}>
@@ -124,6 +125,12 @@ export const TestDisplayContent = ({ testData }) => {
                         <p>Попыток: {settings.attemptNumber}</p>
                     </div>
                     <ActionButton onClick={() => setTestBeginningMode(false)}>Начать тест</ActionButton>
+
+                    {/* прошлые попытки */}
+                    <div>
+                        <p style={{fontSize: '18px'}}>Результаты: </p>
+                        
+                    </div>
                 </div>
             ) : (
                 <>
@@ -146,9 +153,12 @@ export const TestDisplayContent = ({ testData }) => {
                             </div>
                         ))}
                     </div>
-
+                    {/* область самого задания */}
                     <div style={{ color: '#000' }}>
+                        {/* текст задания */}
                         <p style={{fontWeight: 'bold'}}>{completedTasks[activeTaskIndex]?.question}</p>
+
+                        <p style={{fontWeight: 'bold'}}> дебаг тип задания: {String(completedTasks[activeTaskIndex]?.type)}</p>
                         
                         {completedTasks[activeTaskIndex]?.type === 'text' && (
                             <textarea 
@@ -162,8 +172,8 @@ export const TestDisplayContent = ({ testData }) => {
                             completedTasks[activeTaskIndex].options.map((opt, i) => (
                                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px' }}>
                                     <RadioButton 
-                                        checked={completedTasks[activeTaskIndex].completedRadioOption === opt.text}
-                                        onChange={() => updateActiveCompletedTask('completedRadioOption', opt.text)}
+                                        checked={completedTasks[activeTaskIndex].completedRadioOptionId === opt.text}
+                                        onChange={() => updateActiveCompletedTask('completedRadioOptionId', opt.text)}
                                     />
                                     <label>{opt.text}</label>
                                 </div>
@@ -173,14 +183,14 @@ export const TestDisplayContent = ({ testData }) => {
                             completedTasks[activeTaskIndex].options.map((opt, i) => (
                                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px' }}>
                                     <CheckboxSquare 
-                                        checked={completedTasks[activeTaskIndex].completedBoxOptions.includes(opt.text)}
+                                        checked={completedTasks[activeTaskIndex].completedBoxOptionIds.includes(opt.text)}
                                         onChange={() => handleCheckboxChange(opt.text)}
                                     />
                                     <label>{opt.text}</label>
                                 </div>
                         ))}
                     </div>
-
+                    {/* завершение теста */}
                     <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
                         {activeTaskIndex === completedTasks.length - 1 && (
                             <ActionButton onClick={handleFinishTest} disabled={isSubmitting}>
