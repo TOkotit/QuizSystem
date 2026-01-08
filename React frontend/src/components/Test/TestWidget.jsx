@@ -12,10 +12,10 @@ const getCookie = (name) => {
     return null;
 };
 
-const TestWidget = ({ initialTitle, pollId }) => { 
+const TestWidget = ({ initialTitle, pollId: testId }) => { 
     const { createTest, loading, error, fetchTest, deleteTest } = useTestsApi();
 
-    const [viewMode, setViewMode] = useState(pollId ? 'display' : 'creator');
+    const [viewMode, setViewMode] = useState(testId ? 'display' : 'creator');
     const [isDataLoaded, setIsDataLoaded] = useState(false);
     const [currentUserId, setCurrentUserId] = useState(null);
     const [testCreationData, setTestCreationData] = useState({
@@ -30,6 +30,8 @@ const TestWidget = ({ initialTitle, pollId }) => {
         endTime:null,
     });
 
+    const [savedTestData, setSavedTestData] = useState(null);
+
     useEffect(() => {
         let userId = localStorage.getItem('userId');
         if (!userId) {
@@ -43,28 +45,35 @@ const TestWidget = ({ initialTitle, pollId }) => {
     }, []);
 
     useEffect(() => {
+        if (!testId) return;
         let isMounted = true;
 
-        if (pollId) {
-            fetchTest(pollId).then(data => {
-                if (data && isMounted) {
-                    setTestCreationData({
-                        id: data.id,
-                        title: data.title,
-                        tasks: data.tasks || [],
-                    });
-                    if (data.settings) setTestSettingsData(data.settings);
-                    setIsDataLoaded(true);
-                }
-            }).catch(err => {
-                console.error("Ошибка загрузки:", err);
+        (async () => {
+            try {
+                const serverTest = await fetchTest(testId);
+                if (!isMounted || !serverTest) return;
+
+                setSavedTestData(serverTest);
+
+                setTestCreationData({ 
+                    id: serverTest.id,
+                    title: serverTest.title,
+                    tasks: serverTest.tasks || [],
+                    all_attempts: serverTest.all_attempts,
+                    ownerID: serverTest.owner
+                });
+
+                if (serverTest.settings) 
+                        setTestSettingsData(serverTest.settings);
+                
                 setIsDataLoaded(true);
-            });
-        } else {
-            setIsDataLoaded(true);
-        }
+                
+            } catch (e) {
+                console.error('Ошибка загрузки теста:', e);
+            }
+        })();
         return () => { isMounted = false; };
-    }, [pollId, fetchTest]);
+    }, [testId, fetchTest]);
 
     const handleSettingsBack = useCallback(() => setViewMode('creator'), []);
     
@@ -105,7 +114,8 @@ const TestWidget = ({ initialTitle, pollId }) => {
         try {
             const result = await createTest(testCreationData, testSettingsData);
             if (result && result.id) {
-                setTestCreationData(result); 
+                setSavedTestData(result); 
+                
                 setViewMode('display'); 
             }
         } catch (err) {
@@ -118,7 +128,7 @@ const TestWidget = ({ initialTitle, pollId }) => {
         return testCreationData.title || "Тест";
     };
 
-    if (pollId && !isDataLoaded) {
+    if (testId && !isDataLoaded) {
         return (
             <BaseWidgetCard title="Загрузка...">
                 <div style={{padding: '20px', textAlign: 'center'}}>Загрузка данных теста...</div>
@@ -197,13 +207,8 @@ const TestWidget = ({ initialTitle, pollId }) => {
 
 
                 <TestDisplayContent 
-                    testId={testCreationData.id || pollId}
-                    testData={{
-                        ...testCreationData,
-                        id: testCreationData.id || pollId,
-                        settings: testSettingsData,
-                        tasks: testCreationData.tasks || []
-                     }}
+                    testData={savedTestData}
+                    setTestData={setSavedTestData}
                 />
             </div>
             )}
