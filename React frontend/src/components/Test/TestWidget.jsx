@@ -13,7 +13,7 @@ const getCookie = (name) => {
 };
 
 const TestWidget = ({ initialTitle, pollId }) => { 
-    const { createTest, loading, error, getTest: fetchTest } = useTestsApi();
+    const { createTest, loading, error, fetchTest } = useTestsApi();
 
     const [viewMode, setViewMode] = useState(pollId ? 'display' : 'creator');
     const [isDataLoaded, setIsDataLoaded] = useState(false);
