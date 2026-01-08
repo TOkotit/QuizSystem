@@ -19,7 +19,7 @@ export const TestDisplayContent = ({ testData, setTestData }) => {
     const [completedTasks, setCompletedTasks] = useState([]);
 
     const userAttempts = testData?.all_attempts.filter(v => v.user === String(currentUserId));
-
+    const remainingAttempts = testData.attempt_number - userAttempts.length;
     // ЖЕСТКАЯ ПРОВЕРКА: Инициализация как в рабочих опросах
     useEffect(() => {
         initializeTasks
@@ -139,7 +139,7 @@ export const TestDisplayContent = ({ testData, setTestData }) => {
             <h3 style={{ color: '#000', marginBottom: '15px' }}>{title}</h3>
             {testData?.owner === currentUserId && (<div>
                 {/* --- СЕКЦИЯ С ВСЕМИ РЕЗУЛЬТАТАМИ --- */}
-                {testData?.all_attempts && testData?.all_attempts.length > 0 && (
+                {(testData?.all_attempts && testData?.all_attempts.length > 0) ? (
                     <div style={{ marginBottom: '20px', textAlign: 'left' }}>
                         <h4 style={{ marginBottom: '10px' }}>Все результаты:</h4>
                         <div style={{ 
@@ -157,7 +157,7 @@ export const TestDisplayContent = ({ testData, setTestData }) => {
                                     display: 'flex', 
                                     justifyContent: 'space-between', 
                                     padding: '10px 5px',
-                                    borderBottom: index !== userAttempts.length - 1 ? '1px solid #ddd' : 'none'
+                                    borderBottom: index !== testData?.all_attempts.length - 1 ? '1px solid #ddd' : 'none'
                                 }}>
                                     <span style={{ fontWeight: 'bold', fontSize: '14px' }}>
                                         {attempt.user} 
@@ -172,7 +172,9 @@ export const TestDisplayContent = ({ testData, setTestData }) => {
                             ))}
                         </div>
                     </div>
-                )}
+                ) : (<div style={{ color: '#888', textAlign: 'center', padding: '20px' }}>
+                        Нет результатов
+                    </div>)}
             </div>)}
             
             {testData?.owner !== currentUserId && (<div>
@@ -180,16 +182,18 @@ export const TestDisplayContent = ({ testData, setTestData }) => {
                 {testBeginningMode ? (
                     <div style={{color:'#000'}}>
                         <div style={{marginBottom: '15px'}}>
-                            <p>Автор {testData.owner}</p>
+                            <p>Автор: {testData.owner}</p>
                             <p>Заданий: {tasks.length}</p>
                             {testData.completion_time && <p>Время: {testData.completion_time} мин.</p>}
                             {testData.end_date && <p>Доступно до: {testData.end_date} {testData.end_time}</p>}
-                            <p>Попыток: {testData.attempt_number}</p>
+                            <p>Попыток: {remainingAttempts}</p>
                         </div>
-                        <ActionButton onClick={handleStartTest}>Начать тест</ActionButton>
+                        <ActionButton onClick={handleStartTest}
+                            style={{borderRadius: "10px"}}
+                            disabled={remainingAttempts <= 0}>Начать тест</ActionButton>
                         
                         {/* --- СЕКЦИЯ С личными РЕЗУЛЬТАТАМИ --- */}
-                        {userAttempts && userAttempts.length > 0 && (
+                        {(userAttempts && userAttempts.length > 0) ? (
                             <div style={{ marginBottom: '20px', textAlign: 'left' }}>
                                 <h4 style={{ marginBottom: '10px' }}>Ваши предыдущие результаты:</h4>
                                 <div style={{ 
@@ -219,7 +223,9 @@ export const TestDisplayContent = ({ testData, setTestData }) => {
                                     ))}
                                 </div>
                             </div>
-                        )}
+                        ) : (<div style={{ color: '#888', textAlign: 'center', padding: '20px' }}>
+                        Нет результатов
+                    </div>)}
 
                     </div>
                 ) : (

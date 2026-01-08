@@ -115,7 +115,7 @@ const TestWidget = ({ initialTitle, pollId: testId }) => {
             const result = await createTest(testCreationData, testSettingsData);
             if (result && result.id) {
                 setSavedTestData(result); 
-                
+                setIsDataLoaded(true);
                 setViewMode('display'); 
             }
         } catch (err) {
