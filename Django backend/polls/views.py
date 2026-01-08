@@ -15,7 +15,7 @@ from .serializers import (
     TestAttemptSerializer,
 )
 
-
+from .permissions import IsOwnerOrReadOnly
 # --- CSRF ---
 def set_csrf_cookie(request):
     get_token(request)
@@ -46,7 +46,7 @@ class PollListCreateAPIView(generics.ListCreateAPIView):
 class PollRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Poll.objects.all()
     serializer_class = PollDetailSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsOwnerOrReadOnly]
 
 
 class VoteCreateAPIView(generics.CreateAPIView):

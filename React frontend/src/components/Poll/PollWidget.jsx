@@ -18,10 +18,33 @@ const PollWidget = ({ initialTitle, pollId}) => {
         endDate: '', 
         endTime: '' 
     });
+
+    const handleDeleteClick = async () => {
+        if (window.confirm("Вы уверены, что хотите полностью удалить этот опрос?")) {
+            try {
+                await deletePoll(pollId, currentUserId); 
+                alert("Опрос успешно удален из базы");
+                setTimeout(() => {
+                        window.location.reload();
+                    }, 100);
+                } catch (err) {
+                console.error("Детали ошибки:", err);
+                if (err.status === 403) {
+                    alert("У вас нет прав на удаление этого опроса. Удалять может только автор.");
+                } else {
+                    // Все остальные ошибки (сервер упал, нет интернета и т.д.)
+                    alert("Произошла ошибка при удалении: " + err.message);
+                }
+                console.warn("Побочная ошибка (вероятно расширение браузера):", err);
+            }
+        }
+    };
+
+
     const [savedPollData, setSavedPollData] = useState(null);
     const [viewMode, setViewMode] = useState('creator');
 
-    const { createPoll, loading, error, fetchPoll } = usePollsApi();
+    const { createPoll, loading, error, fetchPoll, deletePoll } = usePollsApi();
 
     const [currentUserId, setCurrentUserId] = useState();
     
@@ -190,12 +213,42 @@ const PollWidget = ({ initialTitle, pollId}) => {
 
     return (
         <BaseWidgetCard 
+            style={{ position: 'relative' }}
             title={getWidgetTitle()} 
+            onSettingsClick={viewMode === 'display' ? toggleCreator : undefined}
             toggleSettings={viewMode !== 'settings' ? toggleSettings : undefined}
             showMenuDots={viewMode === 'creator'}
             onTitleClick={viewMode === 'display' ? toggleCreator : undefined} 
         > 
             {<p style={{color: 'red', textAlign: 'center'}}>{loading ? 'Сохранение...' : error}</p>}
+            
+            {/* --- КНОПКА-КРЕСТИК (ОТОБРАЖАЕТСЯ ВСЕГДА) --- */}
+            <div 
+                onClick={handleDeleteClick}
+                style={{
+                    position: 'absolute',
+                    top: '15px',
+                    right: '15px',
+                    width: '24px',
+                    height: '24px',
+                    backgroundColor: '#ff4d4d',
+                    color: 'white',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    zIndex: 100, // Чтобы быть поверх всех элементов
+                    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+                    lineHeight: '1'
+                }}
+                title="Удалить опрос"
+            >
+                &times;
+            </div>
+            
             <div style={{ position: 'relative' }}>
                     {/* Маленькая метка с ID в углу для теста */}
                     <div style={{ 
@@ -207,6 +260,9 @@ const PollWidget = ({ initialTitle, pollId}) => {
                         User ID: {currentUserId}
                     </div>
             </div>
+
+            
+
             {viewMode === 'creator' && (
                 <PollCreatorContent 
                     onSave={handleSave} 
@@ -220,8 +276,14 @@ const PollWidget = ({ initialTitle, pollId}) => {
                     onDataChange={setPollSettingsData} 
                     initialData={pollSettingsData} 
                     toggleSettings={handleSettingsBack} 
+                    // onDelete={() => {
+                    //     if (window.confirm("Вы уверены, что хотите удалить этот опрос?")) {
+                    //         alert("Опрос удален (здесь будет вызов API)");
+                    //         // В будущем здесь добавим: setViewMode('creator'); или удаление из списка
+                    //     }
+                    // }}
                 />
-            )}
+            )}ы
             
             {viewMode === 'display' && savedPollData && (
                 <PollDisplayContent 
