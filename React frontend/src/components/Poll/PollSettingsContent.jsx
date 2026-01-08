@@ -24,7 +24,7 @@ export const PollSettingsContent = ({ onDataChange, initialData, toggleSettings 
       padding: '12px 16px',
       backgroundColor: '#e0e0e0',
       border: 'none',
-      borderRadius: '0px',
+      borderRadius: '15px',
       fontSize: '16px',
       color: '#333',
       outline: 'none',
@@ -101,6 +101,12 @@ export const PollSettingsContent = ({ onDataChange, initialData, toggleSettings 
               />
           </div>
         </div>
+      
+      {/* <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'flex-start', paddingTop: '30px' }}>
+        <ActionButton onClick={()=>{}} style={{ borderRadius: '5px', backgroundColor: '#ff8080ff' }}>
+          Удалить опрос
+        </ActionButton>
+      </div> */}
 
       {/* Кнопка "Назад" для возврата к созданию опроса */}
       <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'flex-end', marginTop: 'auto', paddingTop: '20px' }}>

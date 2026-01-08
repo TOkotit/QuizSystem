@@ -19,10 +19,16 @@ const TestWidget = ({ initialTitle, pollId }) => {
     const [isDataLoaded, setIsDataLoaded] = useState(false);
     const [currentUserId, setCurrentUserId] = useState(null);
     const [testCreationData, setTestCreationData] = useState({
+        ownerID: '',
         title: initialTitle || '',
         tasks: []
     });
-    const [testSettingsData, setTestSettingsData] = useState({});
+    const [testSettingsData, setTestSettingsData] = useState({
+        completionTime: null, 
+        attemptNumber: 1, 
+        endDate:null, 
+        endTime:null,
+    });
 
     useEffect(() => {
         let userId = localStorage.getItem('userId');

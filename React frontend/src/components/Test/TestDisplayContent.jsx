@@ -23,7 +23,7 @@ export const TestDisplayContent = ({ testData }) => {
             const initial = tasks.map((task) => ({
                 id: task.id,
                 question: task.question,
-                type: task.type,
+                type: task.task_type,
                 score: task.score,
                 options: Array.isArray(task.options) ? task.options : [],
                 completedText: '',
@@ -32,7 +32,7 @@ export const TestDisplayContent = ({ testData }) => {
             }));
             setCompletedTasks(initial);
         }
-    }, [tasks, testData]);
+    }, []);
 
     const updateActiveCompletedTask = (field, value) => {
         setCompletedTasks(prev => {
@@ -44,14 +44,26 @@ export const TestDisplayContent = ({ testData }) => {
         });
     };
 
+    const handleSetPreviousTask = () => {
+        if (activeTaskIndex > 0){
+            setActiveTaskIndex(activeTaskIndex - 1)
+        }
+    }
+
+    const handleSetNextTask = () => {
+        if (activeTaskIndex < tasks.length-1){
+            setActiveTaskIndex(activeTaskIndex + 1)
+        }
+    }
+
     const handleCheckboxChange = (optionValue) => {
         const currentTask = completedTasks[activeTaskIndex];
         if (!currentTask) return;
-        const currentSelected = currentTask.completedBoxOptions || [];
+        const currentSelected = currentTask.completedBoxOptionIds || [];
         const nextSelected = currentSelected.includes(optionValue)
             ? currentSelected.filter(item => item !== optionValue)
             : [...currentSelected, optionValue];
-        updateActiveCompletedTask('completedBoxOptions', nextSelected);
+        updateActiveCompletedTask('completedBoxOptionIds', nextSelected);
     };
 
     const getOptionIdByText = (task, text) => {
@@ -71,10 +83,10 @@ export const TestDisplayContent = ({ testData }) => {
                 answers: completedTasks.map(task => {
                     let selected_ids = [];
                     if (task.type === 'single') {
-                        const id = getOptionIdByText(task, task.completedRadioOption);
+                        const id = getOptionIdByText(task, task.completedRadioOptionId);
                         if (id) selected_ids = [id];
                     } else if (task.type === 'multiple') {
-                        selected_ids = task.completedBoxOptions
+                        selected_ids = task.completedBoxOptionIds
                             .map(text => getOptionIdByText(task, text))
                             .filter(id => id !== null);
                     }
@@ -117,6 +129,7 @@ export const TestDisplayContent = ({ testData }) => {
         <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
             <h3 style={{ color: '#000', marginBottom: '15px' }}>{title}</h3>
             
+            {/* начало теста */}
             {testBeginningMode ? (
                 <div style={{color:'#000'}}>
                     <div style={{marginBottom: '15px'}}>
@@ -124,32 +137,55 @@ export const TestDisplayContent = ({ testData }) => {
                         <p>Попыток: {settings.attemptNumber}</p>
                     </div>
                     <ActionButton onClick={() => setTestBeginningMode(false)}>Начать тест</ActionButton>
+
+                    {/* прошлые попытки */}
+                    <div>
+                        <p style={{fontSize: '18px'}}>Результаты: </p>
+
+                    </div>
                 </div>
             ) : (
                 <>
                     {/* Табы вопросов */}
-                    <div style={{ display: 'flex', borderBottom: '2px solid #333', marginBottom: '15px', overflowX: 'auto' }}>
-                        {completedTasks.map((_, index) => (
-                            <div 
-                                key={index} 
-                                onClick={() => setActiveTaskIndex(index)}
-                                style={{
-                                    padding: '8px 12px',
-                                    cursor: 'pointer',
-                                    backgroundColor: index === activeTaskIndex ? '#00a2ff' : '#eee',
-                                    color: index === activeTaskIndex ? '#fff' : '#000',
-                                    marginRight: '2px',
-                                    borderRadius: '5px 5px 0 0'
-                                }}
-                            >
-                                {index + 1}
-                            </div>
-                        ))}
-                    </div>
-
+                                <div style={{ display: 'flex',
+                                    borderBottom: '2px solid #333' }}>
+                                    <ActionButton onClick={handleSetPreviousTask}
+                                        style={{borderRadius:'10px'}}>
+                                        ←
+                                    </ActionButton>
+                                    <div style={{ display: 'flex', overflowX: 'auto' }}>
+                                        {completedTasks.map((_, index) => (
+                                            <div 
+                                                key={index}
+                                                onClick={() => setActiveTaskIndex(index)}
+                                                style={{
+                                                    padding: '8px 12px',
+                                                    cursor: 'pointer',
+                                                    backgroundColor: index === activeTaskIndex ? '#00a2ff' : '#eee',
+                                                    color: index === activeTaskIndex ? '#fff' : '#000',
+                                                    marginRight: '2px',
+                                                    borderRadius: '5px 5px 0 0',
+                                                    minWidth:'25px',
+                                                    textAlign: 'center'
+                                                }}
+                                            >
+                                                {index + 1}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <ActionButton onClick={handleSetNextTask}
+                                        style={{borderRadius:'10px', marginLeft: 'auto'}}>
+                                        →
+                                    </ActionButton>
+                                </div>
+                    {/* область самого задания */}
                     <div style={{ color: '#000' }}>
+                        {/* текст задания */}
                         <p style={{fontWeight: 'bold'}}>{completedTasks[activeTaskIndex]?.question}</p>
+
+                        {/* <p style={{fontWeight: 'bold'}}> дебаг тип задания: {String(completedTasks[activeTaskIndex]?.type)}</p> */}
                         
+                        {/* тип текст */}
                         {completedTasks[activeTaskIndex]?.type === 'text' && (
                             <textarea 
                                 value={completedTasks[activeTaskIndex].completedText}
@@ -158,29 +194,59 @@ export const TestDisplayContent = ({ testData }) => {
                             />
                         )}
 
+                        {/* тип один выбор */}
                         {completedTasks[activeTaskIndex]?.type === 'single' && 
                             completedTasks[activeTaskIndex].options.map((opt, i) => (
-                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px' }}>
+                                <div key={i} onClick={() => updateActiveCompletedTask('completedRadioOptionId', opt.id)} 
+                                    style={{ display: 'flex', alignItems: 'center', marginBottom: '15px', cursor: 'pointer', gap:"10px" }}>
                                     <RadioButton 
-                                        checked={completedTasks[activeTaskIndex].completedRadioOption === opt.text}
-                                        onChange={() => updateActiveCompletedTask('completedRadioOption', opt.text)}
+                                        checked={completedTasks[activeTaskIndex].completedRadioOptionId === opt.id}
+                                        onChange={() => updateActiveCompletedTask('completedRadioOptionId', opt.id)}
                                     />
-                                    <label>{opt.text}</label>
-                                </div>
+                                    <div style={{ flexGrow: 1, 
+                                        display: 'flex', 
+                                        justifyContent: 'space-between', 
+                                        backgroundColor: completedTasks[activeTaskIndex].completedRadioOptionId === opt.id ? '#d0d0d0' : '#e0e0e0', 
+                                        padding: '12px 16px', 
+                                        borderRadius: "10px", 
+                                        position: 'relative', 
+                                        overflow: 'hidden' }}>
+                                        <span >{opt.text}</span>
+                                    </div>   
+                                </div> 
                         ))}
 
+                        {/* тип несколько ответов */}
                         {completedTasks[activeTaskIndex]?.type === 'multiple' && 
                             completedTasks[activeTaskIndex].options.map((opt, i) => (
-                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px' }}>
+                                <div key={i} onClick={() => handleCheckboxChange(opt.id)} 
+                                    style={{ display: 'flex', alignItems: 'center', marginBottom: '15px', cursor: 'pointer', gap:"10px" }}>
                                     <CheckboxSquare 
-                                        checked={completedTasks[activeTaskIndex].completedBoxOptions.includes(opt.text)}
-                                        onChange={() => handleCheckboxChange(opt.text)}
+                                        checked={completedTasks[activeTaskIndex].completedBoxOptionIds.includes(opt.id)}
+                                        onChange={() => handleCheckboxChange(opt.id)}
                                     />
-                                    <label>{opt.text}</label>
-                                </div>
+                                    <div style={{ flexGrow: 1, 
+                                        display: 'flex', 
+                                        justifyContent: 'space-between', 
+                                        backgroundColor: completedTasks[activeTaskIndex].completedBoxOptionIds.includes(opt.id) ? '#d0d0d0' : '#e0e0e0', 
+                                        padding: '12px 16px', 
+                                        borderRadius: "10px", 
+                                        position: 'relative', 
+                                        overflow: 'hidden' }}>
+                                        <span >{opt.text}</span>
+                                    </div>   
+                                </div> 
                         ))}
                     </div>
-
+                    {/* кнопка дальше */}
+                    <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
+                        {activeTaskIndex !== completedTasks.length - 1 && (
+                            <ActionButton onClick={handleSetNextTask}>
+                                Дальше
+                            </ActionButton>
+                        )}
+                    </div>
+                    {/* завершение теста */}
                     <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
                         {activeTaskIndex === completedTasks.length - 1 && (
                             <ActionButton onClick={handleFinishTest} disabled={isSubmitting}>

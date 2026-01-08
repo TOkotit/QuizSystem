@@ -6,7 +6,7 @@ import { PollDisplayContent } from './PollDisplayContent';
 import { usePollsApi } from '../../hooks/usePollsApi';
 
 
-const PollWidget = ({ initialTitle, pollId, onSaved }) => {
+const PollWidget = ({ initialTitle, pollId}) => {
     const [pollCreationData, setPollCreationData] = useState({ 
         ownerID: '',
         title: initialTitle || '', 
@@ -23,28 +23,28 @@ const PollWidget = ({ initialTitle, pollId, onSaved }) => {
 
     const { createPoll, loading, error, fetchPoll } = usePollsApi();
 
-    const [currentUserId, setCurrentUserId] = useState(null);
+    const [currentUserId, setCurrentUserId] = useState();
     
-        useEffect(() => {
-            // 1. Пытаемся взять из localStorage
-            let userId = localStorage.getItem('userId');
-    
-            // 2. Если там нет, пытаемся взять из Cookie (например, 'user_id' или 'session_id')
-            if (!userId) {
-                userId = getCookie('user_id'); 
-            }
-    
-            if (!userId) {
-                // Генерируем случайный ID, если его нет
-                userId = 'anon_' + Math.random().toString(36).substring(2, 11);
-                localStorage.setItem('userId', userId);
-            }
-            
-            if (userId) {
-                setCurrentUserId(userId);
-                console.log("ID пользователя загружен:", userId);
-            }
-        }, []);
+    useEffect(() => {
+        // 1. Пытаемся взять из localStorage
+        let userId = localStorage.getItem('userId');
+
+        // 2. Если там нет, пытаемся взять из Cookie (например, 'user_id' или 'session_id')
+        if (!userId) {
+            userId = getCookie('user_id'); 
+        }
+
+        if (!userId) {
+            // Генерируем случайный ID, если его нет
+            userId = 'anon_' + Math.random().toString(36).substring(2, 11);
+            localStorage.setItem('userId', userId);
+        }
+        
+        if (userId) {
+            setCurrentUserId(userId);
+            console.log("ID пользователя загружен:", userId);
+        }
+    }, []);
     
         const getInfo = useCallback((data) => {
             if (!data) return;
@@ -159,7 +159,7 @@ const PollWidget = ({ initialTitle, pollId, onSaved }) => {
             const dataToSend = {
                 ...pollCreationData,
                 options: non_empty_options,
-                owner: currentUserId // Добавляем имя пользователя как владельца
+                ownerID: currentUserId // Добавляем имя пользователя как владельца
             };
 
             const savedData = await createPoll(dataToSend, pollSettingsData);

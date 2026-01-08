@@ -94,7 +94,7 @@ export const usePollsApi = (externalApiBaseUrl) => {
       .map(text => ({ choice_text: text }));
 
     const payload = {
-      owner_ID: pollData.ownerID,
+      owner: pollData.ownerID,
       title: pollData.title,
       choices,
       is_anonymous: pollSettings.isAnonymous,
@@ -119,7 +119,21 @@ export const usePollsApi = (externalApiBaseUrl) => {
     }
   }, []);
 
-  const votePoll = useCallback(async (pollId, choiceId) => {
+  const getAllPollVotes = useCallback(async (pollId) => {
+    setLoading(true);
+    setError(null);
+    try {
+     const data = await apiFetch(`${API_BASE_URL}${pollId}/`, { method: 'GET' });
+      return data;
+    } catch (err) {
+      setError(err.message);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [])
+
+  const votePoll = useCallback(async (pollId, voteData) => {
     setLoading(true);
     setError(null);
 
@@ -131,7 +145,7 @@ export const usePollsApi = (externalApiBaseUrl) => {
       const data = await apiFetch(`${API_BASE_URL}${pollId}/vote/`, {
         method: 'POST',
         headers: { 'X-CSRFToken': csrfToken },
-        body: JSON.stringify({ choice_id: choiceId }),
+        body: JSON.stringify({ choice_id: voteData.choiceId,  user: voteData.userId}),
       });
       return data;
     } catch (err) {

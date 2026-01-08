@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { ActionButton, CheckboxSquare, RadioButton } from '../Atoms';
 import { usePollsApi } from '../../hooks/usePollsApi';
 
@@ -8,30 +8,43 @@ export const PollDisplayContent = ({ pollData, setPollData }) => {
         id: pollId, 
         title, 
         choices, // Массив объектов {id, choice_text, votes_count}
+        all_votes = [],
+        voted_users = [],
         is_anonymous, 
-        multiple_answers, 
+        multiple_answers,
         end_date,
         total_votes // Общее кол-во голосов (приходит с бэкенда)
     } = pollData;
 
     // --- API: ПОДКЛЮЧЕНИЕ ХУКА ---
-    const { votePoll, loading, error, setError } = usePollsApi();
+    const { votePoll, loading, error, setError, fetchPoll } = usePollsApi();
 
+    // Достаем то самое имя пользователя, которое "другой человек" сохранил в localStorage
+    const currentUserId = localStorage.getItem('userId') || 'Anonymous';
     const anonymityStatus = is_anonymous ? 'Анонимно' : 'Неанонимно';
     const displayEndDate = end_date ? `До ${end_date.split('T')[0]}` : 'Нет даты';
 
     // Подсчет процентов на основе данных с бэкенда
     const getPercentage = (votes) => {
-        if (!total_votes || total_votes === 0) return "0%";
-        return `${Math.round((votes / total_votes) * 100)}%`;
+        if (!voted_users || voted_users.length === 0) return "0%";
+        return `${Math.round((votes / voted_users.length) * 100)}%`;
     };
     
-    const [isSaved, setIsSaved] = useState(false);
+    const [isSaved, setIsSaved] = useState(all_votes.some(v => v.user === String(currentUserId)));
     const [selectedOption, setSelectedOption] = useState();
     const [selectedCheckboxes, setSelectedCheckboxes] = useState([]);
+    const [UsersVote, setUsersVote] = useState(all_votes.find(v => v.user === String(currentUserId)));
 
-    const handleRadioChange = (event) => {
-        setSelectedOption(event.target.value);
+    const  [isVoteDisabled, setIsVoteDisabled] = useState(isSaved || loading 
+        || (!multiple_answers && !selectedOption) || (multiple_answers && selectedCheckboxes.length === 0)); 
+
+    useEffect(() => {
+        setIsVoteDisabled(isSaved || loading 
+        || (!multiple_answers && !selectedOption) || (multiple_answers && selectedCheckboxes.length === 0))
+    }, [isSaved, loading, multiple_answers, selectedOption, selectedCheckboxes]);
+
+    const handleRadioChange = (choiceId) => {
+        setSelectedOption(choiceId);
     };
 
     const handleCheckboxChange = (choiceIdStr) => {
@@ -43,16 +56,35 @@ export const PollDisplayContent = ({ pollData, setPollData }) => {
 
 const handleVote = async () => {
     // Если ничего не выбрано - выходим
-    if (!selectedOption || (Array.isArray(selectedOption) && selectedOption.length === 0)) return;
+    if ((!multiple_answers && !selectedOption) || (multiple_answers && selectedCheckboxes.length === 0)) return;
 
-    // Достаем то самое имя пользователя, которое "другой человек" сохранил в localStorage
-    const currentUserName = localStorage.getItem('userId') || 'Anonymous';
-
+   
     try {
-        const success = await votePoll(pollId, { 
-            choice_id: selectedOption,
-            user: currentUserName // ОТПРАВЛЯЕМ ИМЯ В БАЗУ
-        });
+        let success = true;
+        if (multiple_answers) {
+            // 1. Создаем массив промисов (запросов)
+            const votePromises = selectedCheckboxes.map(checkbox => 
+                votePoll(pollId, {
+                    choiceId: checkbox,
+                    userId: currentUserId
+                })
+            );
+
+            // 2. Ждем, пока ВСЕ запросы выполнятся
+            try {
+                await Promise.all(votePromises);
+                success = true;
+            } catch (e) {
+                console.error("Один из голосов не прошел", e);
+                success = false;
+            }
+        }
+        else{
+            success = await votePoll(pollId,
+            {choiceId: selectedOption,
+            userId: currentUserId
+            });
+        }
 
         if (success) {
             setIsSaved(true);
@@ -65,8 +97,6 @@ const handleVote = async () => {
     }
 };
 
-         const isVoteDisabled = isSaved || loading || (!multiple_answers && !selectedOption) || (multiple_answers && selectedCheckboxes.length === 0);
-
     return (
         <div className="nodrag" style={{ display: 'flex', color: '#000', flexDirection: 'column', height: '100%', width: '100%', overflowY: 'auto', paddingRight: '5px' }} onWheel={(e) => e.stopPropagation()}>
             <div style={{ flexShrink: 0, width: '100%' }}>
@@ -76,21 +106,22 @@ const handleVote = async () => {
             </div>
             
             <div style={{ fontSize: '14px', color: '#666', marginBottom: '10px' }}>
-                {anonymityStatus} | {displayEndDate} | Голосов: {total_votes || 0}
+                {anonymityStatus} | {displayEndDate} | Голосов: {voted_users.length || 0}
             </div>
 
             {error && <p style={{color: 'red'}}>{error}</p>}
 
             <div style={{ flexGrow: 1, overflowY: 'auto' }}>
                 {choices?.map((choice) => {
-                    const choiceId = String(choice.id);
+                    const choiceId = choice.id;
                     const isChecked = multiple_answers ? selectedCheckboxes.includes(choiceId) : selectedOption === choiceId;
                     const percent = getPercentage(choice.votes_count);
 
                     return (
-                        <div key={choice.id} onClick={() => !isSaved && (multiple_answers ? handleCheckboxChange(choiceId) : setSelectedOption(choiceId))} style={{ display: 'flex', alignItems: 'center', marginBottom: '15px', cursor: isSaved ? 'default' : 'pointer', gap:"10px" }}>
+                        <div key={choice.id} onClick={() => !isSaved && (multiple_answers ? handleCheckboxChange(choiceId) : handleRadioChange(choiceId))} 
+                        style={{ display: 'flex', alignItems: 'center', marginBottom: '15px', cursor: isSaved ? 'default' : 'pointer', gap:"10px" }}>
                             {!isSaved && multiple_answers && <CheckboxSquare checked={isChecked} onChange={() => handleCheckboxChange(choiceId)} />}
-                            {!isSaved && !multiple_answers && <RadioButton name={`poll-${pollId}`} value={choiceId} checked={isChecked} onChange={handleRadioChange} />}
+                            {!isSaved && !multiple_answers && <RadioButton name={`poll-${pollId}`} checked={isChecked} onChange={() => handleRadioChange(choiceId)}/>}
 
                             <div style={{ flexGrow: 1, display: 'flex', justifyContent: 'space-between', backgroundColor: isChecked ? '#d0d0d0' : '#e0e0e0', padding: '12px 16px', borderRadius: "10px", position: 'relative', overflow: 'hidden' }}>
                                 {/* Прогресс бар (виден после голосования) */}
@@ -107,8 +138,8 @@ const handleVote = async () => {
             <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
                 <ActionButton 
                     onClick={handleVote} 
-                    disabled={isVoteDisabled} // <-- ИЗМЕНЕНО: Используем переменную для логики отключения
-                    style={{ width: '100%', backgroundColor: isSaved ? '#5cb85c' : '#d9d9d9', borderRadius: "10px" }}
+                    disabled={isVoteDisabled}
+                    style={{ width: '100%', backgroundColor: isSaved ? '#10c24cff' : '#d9d9d9', borderRadius: "10px" }}
                 >
                     {loading ? 'Отправка...' : (isSaved ? 'Голос принят' : 'Сохранить')}
                 </ActionButton>
