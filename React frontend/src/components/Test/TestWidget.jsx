@@ -13,7 +13,7 @@ const getCookie = (name) => {
 };
 
 const TestWidget = ({ initialTitle, pollId: testId }) => { 
-    const { createTest, loading, error, fetchTest } = useTestsApi();
+    const { createTest, loading, error, fetchTest, deleteTest } = useTestsApi();
 
     const [viewMode, setViewMode] = useState(testId ? 'display' : 'creator');
     const [isDataLoaded, setIsDataLoaded] = useState(false);
@@ -81,6 +81,35 @@ const TestWidget = ({ initialTitle, pollId: testId }) => {
         setViewMode(prev => prev === 'settings' ? 'creator' : 'settings');
     }, []);
 
+    const handleDeleteClick = async () => {
+    // Берем ID из данных, пришедших от сервера
+        const actualTestId = testCreationData?.id || pollId;
+        const userId = localStorage.getItem('userId') || 'Anonymous';
+
+        if (!actualTestId) {
+            alert("Ошибка: ID теста не найден");
+            return;
+        }
+
+        if (window.confirm("Вы уверены, что хотите полностью удалить этот тест?")) {
+            try {
+                await deleteTest(actualTestId, userId);
+                alert("Тест успешно удален");
+                setTimeout(() => {
+                    window.location.reload();
+                }, 100);
+            } catch (err) {
+                console.error("Ошибка удаления:", err);
+                if (err.status === 403) {
+                    alert("У вас нет прав на удаление (вы не автор).");
+                } else {
+                    alert("Не удалось удалить тест: " + err.message);
+                }
+            }
+        }
+    };
+
+
     const handleSave = useCallback(async () => {
         try {
             const result = await createTest(testCreationData, testSettingsData);
@@ -142,11 +171,46 @@ const TestWidget = ({ initialTitle, pollId: testId }) => {
                 />
             )}
             
-            {viewMode === 'display' &&(
+            {viewMode === 'display' && isDataLoaded &&(
+
+
+                <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column' }}>
+        
+                {/* Кнопка удаления (идентичная опросам) */}
+                {testCreationData?.id && String(testCreationData.owner) === String(currentUserId) && (
+                    <div 
+                        onClick={handleDeleteClick}
+                        style={{
+                            position: 'absolute',
+                            top: '15px',
+                            right: '15px',
+                            width: '24px',
+                            height: '24px',
+                            backgroundColor: '#ff4d4d',
+                            color: 'white',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            fontSize: '18px',
+                            fontWeight: 'bold',
+                            zIndex: 1000, // Повыше, чтобы перекрыть контент
+                            boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+                            lineHeight: '1'
+                        }}
+                        title="Удалить тест"
+                    >
+                        &times;
+                    </div>
+                )}
+
+
                 <TestDisplayContent 
                     testData={savedTestData}
                     setTestData={setSavedTestData}
                 />
+            </div>
             )}
             
             {error && <div style={{color: 'red', fontSize: '12px', padding: '10px', textAlign: 'center'}}>{error}</div>}
