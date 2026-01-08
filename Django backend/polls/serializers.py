@@ -128,11 +128,16 @@ class TestSerializer(serializers.ModelSerializer):
     tasks = TaskSerializer(many=True)
     # owner должен быть доступен для записи
     owner = serializers.CharField(required=False, allow_blank=True)
+    all_attempts = serializers.SerializerMethodField() # все предыдущие попытки теста
 
     class Meta:
         model = Test
-        fields = ('id', 'title', 'owner', 'tasks', 'completion_time', 'attempt_number', 'end_date')
+        fields = ('id', 'title', 'owner', 'tasks', 'all_attempts', 'completion_time', 'attempt_number', 'end_date')
         read_only_fields = ['id', 'created_at']
+
+    def get_all_attempts(self, obj):
+        attempts = TestAttempt.objects.filter(test=obj).order_by('-completed_at')
+        return TestAttemptSerializer(attempts, many=True).data
 
     @transaction.atomic
     def create(self, validated_data):

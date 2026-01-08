@@ -11,13 +11,20 @@ export const TestDisplayContent = ({ testData }) => {
     
     const { submitAttempt, loading: isSubmitting } = useTestsApi();
 
+    const currentUserId = localStorage.getItem('userId') || 'Anonymous';
     const [testBeginningMode, setTestBeginningMode] = useState(true);
+    const [resultMode, setResultMode] = useState(false);
     const [activeTaskIndex, setActiveTaskIndex] = useState(0);
     const [resultData, setResultData] = useState(null);
     const [completedTasks, setCompletedTasks] = useState([]);
 
+    const [userAttempts, setUserAttempts] = useState(testData.all_attempts.filter(v => v.user === String(currentUserId)));
+
     // ЖЕСТКАЯ ПРОВЕРКА: Инициализация как в рабочих опросах
     useEffect(() => {
+        initializeTasks
+    }, []);
+    const initializeTasks = () => {
         if (tasks && Array.isArray(tasks) && tasks.length > 0) {
             console.log("Инициализация задач в Display:", tasks);
             const initial = tasks.map((task) => ({
@@ -31,8 +38,9 @@ export const TestDisplayContent = ({ testData }) => {
                 completedBoxOptionIds: [],
             }));
             setCompletedTasks(initial);
+            setActiveTaskIndex(0);
         }
-    }, []);
+    };
 
     const updateActiveCompletedTask = (field, value) => {
         setCompletedTasks(prev => {
@@ -74,21 +82,18 @@ export const TestDisplayContent = ({ testData }) => {
 
 
     const handleFinishTest = async () => {
-        const currentUserName = localStorage.getItem('userId') || 'Anonymous';
 
         // Собираем данные для отправки (test_id, ответы и имя пользователя)
         const payload = {
                 test: testId,
-                user: currentUserName,
+                user: currentUserId,
                 answers: completedTasks.map(task => {
                     let selected_ids = [];
                     if (task.type === 'single') {
-                        const id = getOptionIdByText(task, task.completedRadioOptionId);
+                        const id = task.completedRadioOptionId;
                         if (id) selected_ids = [id];
                     } else if (task.type === 'multiple') {
-                        selected_ids = task.completedBoxOptionIds
-                            .map(text => getOptionIdByText(task, text))
-                            .filter(id => id !== null);
+                        selected_ids = task.completedBoxOptionIds;
                     }
 
                     return {
@@ -103,20 +108,29 @@ export const TestDisplayContent = ({ testData }) => {
             const result = await submitAttempt(payload);
             if (result) {
                 setResultData(result);
+                setResultMode(true);
                 setTestBeginningMode(false);
             }
         } catch (err) {
             console.error("Ошибка:", err);
         }
     };
+    const handleStartTest = () => {
+        initializeTasks();
+        setTestBeginningMode(false);
+    }
+    const handleQuitResult = () => {
+        setResultMode(false);
+        setTestBeginningMode(true);
+    }
 
     // ЭКРАН РЕЗУЛЬТАТА (как в опросах после голосования)
-    if (resultData) {
+    if (resultData && resultMode) {
         return (
             <div style={{ textAlign: 'center', padding: '20px', color: '#000' }}>
                 <h3 style={{color: '#28a745'}}>Тест завершен!</h3>
                 <p style={{fontSize: '18px'}}>Результат: <b>{resultData.score_obtained}</b> / {resultData.total_score}</p>
-                <ActionButton onClick={() => window.location.reload()}>ОК</ActionButton>
+                <ActionButton onClick={handleQuitResult}>ОК</ActionButton>
             </div>
         );
     }
@@ -128,62 +142,90 @@ export const TestDisplayContent = ({ testData }) => {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
             <h3 style={{ color: '#000', marginBottom: '15px' }}>{title}</h3>
-            
+
             {/* начало теста */}
             {testBeginningMode ? (
                 <div style={{color:'#000'}}>
                     <div style={{marginBottom: '15px'}}>
-                        <p>Доступно до: {settings.endDate} {settings.endTime}</p>
+                        <p>Заданий: {tasks.length}</p>
+                        {settings.completionTime && <p>Время: {settings.completionTime} мин.</p>}
+                        {settings.endDate && <p>Доступно до: {settings.endDate} {settings.endTime}</p>}
                         <p>Попыток: {settings.attemptNumber}</p>
                     </div>
-                    <ActionButton onClick={() => setTestBeginningMode(false)}>Начать тест</ActionButton>
+                    <ActionButton onClick={handleStartTest}>Начать тест</ActionButton>
+                    
+                    {/* --- СЕКЦИЯ С РЕЗУЛЬТАТАМИ --- */}
+                    {userAttempts && userAttempts.length > 0 && (
+                        <div style={{ marginBottom: '20px', textAlign: 'left' }}>
+                            <h4 style={{ marginBottom: '10px' }}>Ваши предыдущие результаты:</h4>
+                            <div style={{ 
+                                display: 'flex', 
+                                flexDirection: 'column', 
+                                backgroundColor: '#f5f5f5', 
+                                borderRadius: '10px', 
+                                padding: '10px',
+                                maxHeight: '200px',       
+                                overflowY: 'auto',        
+                                border: '1px solid #ddd'  
+                            }}>
+                                {userAttempts.map((attempt, index) => (
+                                    <div key={index} style={{ 
+                                        display: 'flex', 
+                                        justifyContent: 'space-between', 
+                                        padding: '10px 5px',
+                                        borderBottom: index !== userAttempts.length - 1 ? '1px solid #ddd' : 'none'
+                                    }}>
+                                        <span style={{ fontSize: '14px' }}>
+                                            {new Date(attempt.completed_at).toLocaleDateString()}
+                                        </span>
+                                        <span style={{ fontWeight: 'bold', fontSize: '14px' }}>
+                                            {attempt.score_obtained} / {attempt.total_score} баллов
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
-                    {/* прошлые попытки */}
-                    <div>
-                        <p style={{fontSize: '18px'}}>Результаты: </p>
-
-                    </div>
                 </div>
             ) : (
                 <>
                     {/* Табы вопросов */}
-                                <div style={{ display: 'flex',
-                                    borderBottom: '2px solid #333' }}>
-                                    <ActionButton onClick={handleSetPreviousTask}
-                                        style={{borderRadius:'10px'}}>
-                                        ←
-                                    </ActionButton>
-                                    <div style={{ display: 'flex', overflowX: 'auto' }}>
-                                        {completedTasks.map((_, index) => (
-                                            <div 
-                                                key={index}
-                                                onClick={() => setActiveTaskIndex(index)}
-                                                style={{
-                                                    padding: '8px 12px',
-                                                    cursor: 'pointer',
-                                                    backgroundColor: index === activeTaskIndex ? '#00a2ff' : '#eee',
-                                                    color: index === activeTaskIndex ? '#fff' : '#000',
-                                                    marginRight: '2px',
-                                                    borderRadius: '5px 5px 0 0',
-                                                    minWidth:'25px',
-                                                    textAlign: 'center'
-                                                }}
-                                            >
-                                                {index + 1}
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <ActionButton onClick={handleSetNextTask}
-                                        style={{borderRadius:'10px', marginLeft: 'auto'}}>
-                                        →
-                                    </ActionButton>
+                    <div style={{ display: 'flex',
+                        borderBottom: '2px solid #333' }}>
+                        <ActionButton onClick={handleSetPreviousTask}
+                            style={{borderRadius:'10px'}}>
+                            ←
+                        </ActionButton>
+                        <div style={{ display: 'flex', overflowX: 'auto' }}>
+                            {completedTasks.map((_, index) => (
+                                <div 
+                                    key={index}
+                                    onClick={() => setActiveTaskIndex(index)}
+                                    style={{
+                                        padding: '8px 12px',
+                                        cursor: 'pointer',
+                                        backgroundColor: index === activeTaskIndex ? '#00a2ff' : '#eee',
+                                        color: index === activeTaskIndex ? '#fff' : '#000',
+                                        marginRight: '2px',
+                                        borderRadius: '5px 5px 0 0',
+                                        minWidth:'25px',
+                                        textAlign: 'center'
+                                    }}
+                                >
+                                    {index + 1}
                                 </div>
+                            ))}
+                        </div>
+                        <ActionButton onClick={handleSetNextTask}
+                            style={{borderRadius:'10px', marginLeft: 'auto'}}>
+                            →
+                        </ActionButton>
+                    </div>
                     {/* область самого задания */}
                     <div style={{ color: '#000' }}>
                         {/* текст задания */}
                         <p style={{fontWeight: 'bold'}}>{completedTasks[activeTaskIndex]?.question}</p>
-
-                        {/* <p style={{fontWeight: 'bold'}}> дебаг тип задания: {String(completedTasks[activeTaskIndex]?.type)}</p> */}
                         
                         {/* тип текст */}
                         {completedTasks[activeTaskIndex]?.type === 'text' && (
@@ -197,13 +239,14 @@ export const TestDisplayContent = ({ testData }) => {
                         {/* тип один выбор */}
                         {completedTasks[activeTaskIndex]?.type === 'single' && 
                             completedTasks[activeTaskIndex].options.map((opt, i) => (
-                                <div key={i} onClick={() => updateActiveCompletedTask('completedRadioOptionId', opt.id)} 
+                                <div key={i} 
                                     style={{ display: 'flex', alignItems: 'center', marginBottom: '15px', cursor: 'pointer', gap:"10px" }}>
                                     <RadioButton 
                                         checked={completedTasks[activeTaskIndex].completedRadioOptionId === opt.id}
                                         onChange={() => updateActiveCompletedTask('completedRadioOptionId', opt.id)}
                                     />
-                                    <div style={{ flexGrow: 1, 
+                                    <div onClick={() => updateActiveCompletedTask('completedRadioOptionId', opt.id)} 
+                                        style={{ flexGrow: 1, 
                                         display: 'flex', 
                                         justifyContent: 'space-between', 
                                         backgroundColor: completedTasks[activeTaskIndex].completedRadioOptionId === opt.id ? '#d0d0d0' : '#e0e0e0', 
@@ -219,13 +262,14 @@ export const TestDisplayContent = ({ testData }) => {
                         {/* тип несколько ответов */}
                         {completedTasks[activeTaskIndex]?.type === 'multiple' && 
                             completedTasks[activeTaskIndex].options.map((opt, i) => (
-                                <div key={i} onClick={() => handleCheckboxChange(opt.id)} 
+                                <div key={i}  
                                     style={{ display: 'flex', alignItems: 'center', marginBottom: '15px', cursor: 'pointer', gap:"10px" }}>
                                     <CheckboxSquare 
                                         checked={completedTasks[activeTaskIndex].completedBoxOptionIds.includes(opt.id)}
                                         onChange={() => handleCheckboxChange(opt.id)}
                                     />
-                                    <div style={{ flexGrow: 1, 
+                                    <div onClick={() => handleCheckboxChange(opt.id)}
+                                        style={{ flexGrow: 1, 
                                         display: 'flex', 
                                         justifyContent: 'space-between', 
                                         backgroundColor: completedTasks[activeTaskIndex].completedBoxOptionIds.includes(opt.id) ? '#d0d0d0' : '#e0e0e0', 
@@ -238,7 +282,7 @@ export const TestDisplayContent = ({ testData }) => {
                                 </div> 
                         ))}
                     </div>
-                    {/* кнопка дальше */}
+                    {/* следующее задание */}
                     <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
                         {activeTaskIndex !== completedTasks.length - 1 && (
                             <ActionButton onClick={handleSetNextTask}>
