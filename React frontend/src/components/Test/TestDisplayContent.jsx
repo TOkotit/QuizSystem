@@ -135,9 +135,44 @@ export const TestDisplayContent = ({ testData, setTestData }) => {
     }
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', width: '100%', color: '#000', }}>
             <h3 style={{ color: '#000', marginBottom: '15px' }}>{title}</h3>
-
+            
+            {/* --- СЕКЦИЯ С ВСЕМИ РЕЗУЛЬТАТАМИ --- */}
+            {testData?.all_attempts && testData?.all_attempts.length > 0 && (
+                <div style={{ marginBottom: '20px', textAlign: 'left' }}>
+                    <h4 style={{ marginBottom: '10px' }}>Все результаты:</h4>
+                    <div style={{ 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        backgroundColor: '#f5f5f5', 
+                        borderRadius: '10px', 
+                        padding: '10px',
+                        maxHeight: '200px',       
+                        overflowY: 'auto',        
+                        border: '1px solid #ddd'  
+                    }}>
+                        {testData?.all_attempts.map((attempt, index) => (
+                            <div key={index} style={{ 
+                                display: 'flex', 
+                                justifyContent: 'space-between', 
+                                padding: '10px 5px',
+                                borderBottom: index !== userAttempts.length - 1 ? '1px solid #ddd' : 'none'
+                            }}>
+                                <span style={{ fontWeight: 'bold', fontSize: '14px' }}>
+                                    {attempt.user} 
+                                </span>
+                                <span style={{ fontSize: '14px' }}>
+                                    {new Date(attempt.completed_at).toLocaleDateString()}
+                                </span>
+                                <span style={{ fontWeight: 'bold', fontSize: '14px' }}>
+                                    {attempt.score_obtained} / {attempt.total_score} баллов
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
             {/* начало теста */}
             {testBeginningMode ? (
                 <div style={{color:'#000'}}>
