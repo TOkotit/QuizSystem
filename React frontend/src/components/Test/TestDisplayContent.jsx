@@ -147,6 +147,7 @@ export const TestDisplayContent = ({ testData }) => {
             {testBeginningMode ? (
                 <div style={{color:'#000'}}>
                     <div style={{marginBottom: '15px'}}>
+                        <p>Автор {testData.ownerID}</p>
                         <p>Заданий: {tasks.length}</p>
                         {settings.completionTime && <p>Время: {settings.completionTime} мин.</p>}
                         {settings.endDate && <p>Доступно до: {settings.endDate} {settings.endTime}</p>}
@@ -154,7 +155,7 @@ export const TestDisplayContent = ({ testData }) => {
                     </div>
                     <ActionButton onClick={handleStartTest}>Начать тест</ActionButton>
                     
-                    {/* --- СЕКЦИЯ С РЕЗУЛЬТАТАМИ --- */}
+                    {/* --- СЕКЦИЯ С личными РЕЗУЛЬТАТАМИ --- */}
                     {userAttempts && userAttempts.length > 0 && (
                         <div style={{ marginBottom: '20px', textAlign: 'left' }}>
                             <h4 style={{ marginBottom: '10px' }}>Ваши предыдущие результаты:</h4>

@@ -52,7 +52,8 @@ const TestWidget = ({ initialTitle, pollId }) => {
                         id: data.id,
                         title: data.title,
                         tasks: data.tasks || [],
-                        all_attempts: data.all_attempts
+                        all_attempts: data.all_attempts,
+                        ownerID: data.owner
                     });
                     if (data.settings) setTestSettingsData(data.settings);
                     setIsDataLoaded(true);
