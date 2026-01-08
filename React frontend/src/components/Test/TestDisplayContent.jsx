@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { ActionButton, RadioButton, CheckboxSquare } from '../Atoms';
 import { useTestsApi } from '../../hooks/useTestsApi';
 
-export const TestDisplayContent = ({ testData }) => {
+export const TestDisplayContent = ({ testData, setTestData }) => {
     // В опросах данные приходят извне, делаем так же
     const testId = testData?.id; 
     const title = testData?.title || '';
     const tasks = testData?.tasks || [];
     const settings = testData?.settings || {};
     
-    const { submitAttempt, loading: isSubmitting } = useTestsApi();
+    const { submitAttempt, loading: isSubmitting, fetchTest } = useTestsApi();
 
     const currentUserId = localStorage.getItem('userId') || 'Anonymous';
     const [testBeginningMode, setTestBeginningMode] = useState(true);
@@ -18,7 +18,7 @@ export const TestDisplayContent = ({ testData }) => {
     const [resultData, setResultData] = useState(null);
     const [completedTasks, setCompletedTasks] = useState([]);
 
-    const [userAttempts, setUserAttempts] = useState(testData.all_attempts.filter(v => v.user === String(currentUserId)));
+    const userAttempts = testData?.all_attempts.filter(v => v.user === String(currentUserId));
 
     // ЖЕСТКАЯ ПРОВЕРКА: Инициализация как в рабочих опросах
     useEffect(() => {
@@ -74,15 +74,8 @@ export const TestDisplayContent = ({ testData }) => {
         updateActiveCompletedTask('completedBoxOptionIds', nextSelected);
     };
 
-    const getOptionIdByText = (task, text) => {
-        if (!text) return null;
-        const found = task.options.find(o => String(o.text) === String(text));
-        return found ? found.id : null;
-    };
-
 
     const handleFinishTest = async () => {
-
         // Собираем данные для отправки (test_id, ответы и имя пользователя)
         const payload = {
                 test: testId,
@@ -110,7 +103,9 @@ export const TestDisplayContent = ({ testData }) => {
                 setResultData(result);
                 setResultMode(true);
                 setTestBeginningMode(false);
+                if (fetchTest) setTestData(await fetchTest(testId));
             }
+
         } catch (err) {
             console.error("Ошибка:", err);
         }
@@ -147,11 +142,11 @@ export const TestDisplayContent = ({ testData }) => {
             {testBeginningMode ? (
                 <div style={{color:'#000'}}>
                     <div style={{marginBottom: '15px'}}>
-                        <p>Автор {testData.ownerID}</p>
+                        <p>Автор {testData.owner}</p>
                         <p>Заданий: {tasks.length}</p>
-                        {settings.completionTime && <p>Время: {settings.completionTime} мин.</p>}
-                        {settings.endDate && <p>Доступно до: {settings.endDate} {settings.endTime}</p>}
-                        <p>Попыток: {settings.attemptNumber}</p>
+                        {testData.completion_time && <p>Время: {testData.completion_time} мин.</p>}
+                        {testData.end_date && <p>Доступно до: {testData.end_date} {testData.end_time}</p>}
+                        <p>Попыток: {testData.attempt_number}</p>
                     </div>
                     <ActionButton onClick={handleStartTest}>Начать тест</ActionButton>
                     
