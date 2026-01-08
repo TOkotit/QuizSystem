@@ -20,9 +20,19 @@ const PollWidget = ({ initialTitle, pollId}) => {
     });
 
     const handleDeleteClick = async () => {
+
+        const actualPollId = savedPollData?.id;
+    
+        // 2. Берем ID пользователя точно так же, как в PollDisplayContent
+        const userId = localStorage.getItem('userId') || 'Anonymous';
+
+        if (!actualPollId) {
+            alert("Ошибка: ID опроса не определен.");
+            return;
+        }
         if (window.confirm("Вы уверены, что хотите полностью удалить этот опрос?")) {
             try {
-                await deletePoll(pollId, currentUserId); 
+                await deletePoll(actualPollId, currentUserId); 
                 alert("Опрос успешно удален из базы");
                 setTimeout(() => {
                         window.location.reload();
@@ -217,37 +227,11 @@ const PollWidget = ({ initialTitle, pollId}) => {
             title={getWidgetTitle()} 
             onSettingsClick={viewMode === 'display' ? toggleCreator : undefined}
             toggleSettings={viewMode !== 'settings' ? toggleSettings : undefined}
-            showMenuDots={viewMode === 'creator'}
+            showMenuDots={viewMode === 'creator'}   
             onTitleClick={viewMode === 'display' ? toggleCreator : undefined} 
         > 
             {<p style={{color: 'red', textAlign: 'center'}}>{loading ? 'Сохранение...' : error}</p>}
-            
-            {/* --- КНОПКА-КРЕСТИК (ОТОБРАЖАЕТСЯ ВСЕГДА) --- */}
-            <div 
-                onClick={handleDeleteClick}
-                style={{
-                    position: 'absolute',
-                    top: '15px',
-                    right: '15px',
-                    width: '24px',
-                    height: '24px',
-                    backgroundColor: '#ff4d4d',
-                    color: 'white',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    fontSize: '18px',
-                    fontWeight: 'bold',
-                    zIndex: 100, // Чтобы быть поверх всех элементов
-                    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-                    lineHeight: '1'
-                }}
-                title="Удалить опрос"
-            >
-                &times;
-            </div>
+                    
             
             <div style={{ position: 'relative' }}>
                     {/* Маленькая метка с ID в углу для теста */}
@@ -283,14 +267,44 @@ const PollWidget = ({ initialTitle, pollId}) => {
                     //     }
                     // }}
                 />
-            )}ы
+            )}
             
             {viewMode === 'display' && savedPollData && (
-                <PollDisplayContent 
-                    pollData={savedPollData} 
-                    setPollData={setSavedPollData} 
-                />
-            )}
+                <>
+                {/* КНОПКА КРЕСТИК: Показываем только создателю в режиме отображения */}
+                {savedPollData?.id && String(savedPollData.owner) === String(currentUserId) && (
+                        <div 
+                            onClick={handleDeleteClick}
+                            style={{
+                                position: 'absolute',
+                                top: '15px',
+                                right: '15px',
+                                width: '24px',
+                                height: '24px',
+                                backgroundColor: '#ff4d4d',
+                                color: 'white',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                fontSize: '18px',
+                                fontWeight: 'bold',
+                                zIndex: 100,
+                                boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+                                lineHeight: '1'
+                            }}
+                            title="Удалить опрос"
+                        >
+                            &times;
+                        </div>
+                    )}
+                    <PollDisplayContent 
+                        pollData={savedPollData} 
+                        setPollData={setSavedPollData} 
+                    />
+    </>
+)}
 
         </BaseWidgetCard>
     );

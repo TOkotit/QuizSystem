@@ -52,6 +52,26 @@ export const useTestsApi = () => {
     }
   }, []);
 
+  const deleteTest = useCallback(async (testId, userId) => {
+    setLoading(true);
+    setError(null);
+    try {
+        const csrfToken = getCsrfToken();
+        return await apiFetch(`${API_BASE_URL}${testId}/`, {
+            method: 'DELETE',
+            headers: { 
+                'X-CSRFToken': csrfToken 
+            },
+            // Передаем owner в теле, если бэкенд проверяет права по нему
+            body: JSON.stringify({ owner: userId })
+        });
+      } catch (err) {
+          setError(err.message);
+          throw err;
+      } finally {
+          setLoading(false);
+      }
+  }, []);
   
   // Создание теста
 const createTest = useCallback(async (testCreationData, testSettingsData) => {
@@ -115,6 +135,7 @@ const submitAttempt = useCallback(async (payload) => {
     error,
     createTest,
     fetchTest,
-    submitAttempt
+    submitAttempt,
+    deleteTest
   };
 };
