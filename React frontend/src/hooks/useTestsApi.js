@@ -38,7 +38,7 @@ export const useTestsApi = () => {
 
 
 
-  const getTest = useCallback(async (id) => {
+  const fetchTest = useCallback(async (id) => {
     setLoading(true);
     setError(null);
     try {
@@ -114,7 +114,7 @@ const submitAttempt = useCallback(async (payload) => {
     loading,
     error,
     createTest,
-    getTest,
+    fetchTest,
     submitAttempt
   };
 };
