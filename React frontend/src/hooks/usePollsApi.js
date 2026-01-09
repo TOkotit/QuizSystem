@@ -119,13 +119,21 @@ export const usePollsApi = (externalApiBaseUrl) => {
       .filter(o => o.trim() !== '')
       .map(text => ({ choice_text: text }));
 
+
+    let formattedEndDate = null;
+    if (pollSettings.endDate) {
+      const localDateTime = new Date(`${pollSettings.endDate}T${pollSettings.endTime || '23:59:59'}`);
+      
+      formattedEndDate = localDateTime.toISOString();
+    }
+
     const payload = {
       owner: pollData.ownerID,
       title: pollData.title,
       choices,
       is_anonymous: pollSettings.isAnonymous,
       multiple_answers: pollSettings.multipleAnswers,
-      end_date: pollSettings.endDate ? `${pollSettings.endDate}T${pollSettings.endTime || '23:59'}:00Z` : null,
+      end_date: formattedEndDate,
     };
 
     try {

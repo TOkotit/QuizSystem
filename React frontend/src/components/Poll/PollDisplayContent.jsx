@@ -16,6 +16,14 @@ export const PollDisplayContent = ({ pollData, setPollData }) => {
         total_votes // Общее кол-во голосов (приходит с бэкенда)
     } = pollData;
 
+    const isPollExpired = () => {
+      if (!end_date) return false;
+      const expiryDate = new Date(end_date);
+      const now = new Date();
+      return now > expiryDate;
+    };
+    const pollExpired = isPollExpired();
+
     // --- API: ПОДКЛЮЧЕНИЕ ХУКА ---
     const { votePoll, loading, error, setError, fetchPoll, unvotePoll } = usePollsApi();
 
@@ -39,13 +47,13 @@ export const PollDisplayContent = ({ pollData, setPollData }) => {
     const [optionDetailsMode, setOptionDetailsMode] = useState(false);
     const [activeOptionDetails, setActiveOptionDetails] = useState(0);
 
-    const  [isVoteDisabled, setIsVoteDisabled] = useState(isSaved || loading 
+    const  [isVoteDisabled, setIsVoteDisabled] = useState(isSaved || loading || pollExpired 
         || (!multiple_answers && !selectedOption) || (multiple_answers && selectedCheckboxes.length === 0)); 
 
     useEffect(() => {
-        setIsVoteDisabled(isSaved || loading 
+        setIsVoteDisabled(isSaved || loading || pollExpired 
         || (!multiple_answers && !selectedOption) || (multiple_answers && selectedCheckboxes.length === 0))
-    }, [isSaved, loading, multiple_answers, selectedOption, selectedCheckboxes]);
+    }, [isSaved, loading, multiple_answers, selectedOption, selectedCheckboxes, pollExpired ]);
 
     const handleRadioChange = (choiceId) => {
         setSelectedOption(choiceId);
@@ -70,7 +78,10 @@ export const PollDisplayContent = ({ pollData, setPollData }) => {
     }
 
     const handleVote = async () => {
-        // Если ничего не выбрано - выходим
+        if (pollExpired) {
+            alert("Время прохождения теста истекло.");
+            return;
+        }
         if ((!multiple_answers && !selectedOption) || (multiple_answers && selectedCheckboxes.length === 0)) return;
 
         try {
@@ -176,6 +187,20 @@ export const PollDisplayContent = ({ pollData, setPollData }) => {
             <div style={{ fontSize: '14px', color: '#666', marginBottom: '10px' }}>
                 {anonymityStatus} | {displayEndDate} | Голосов: {voted_users.length || 0}
             </div>
+            
+            {pollExpired && (
+            <div style={{ 
+                padding: '10px', 
+                backgroundColor: '#ffdddd', 
+                color: 'red', 
+                borderRadius: '10px', 
+                textAlign: 'center',
+                fontWeight: 'bold',
+                marginBottom: '10px'
+            }}>
+                Срок прохождения теста истек
+            </div>
+            )}
 
             {error && <p style={{color: 'red'}}>{error}</p>}
 
