@@ -59,8 +59,10 @@ export const PollDisplayContent = ({ pollData, setPollData }) => {
     };
 
     const handleOpenOptionDetailsMode = (choice) => {
-        setOptionDetailsMode(true);
-        setActiveOptionDetails(choice);
+        if (!is_anonymous) {
+            setOptionDetailsMode(true);
+            setActiveOptionDetails(choice);
+        }
     }
     const handleCloseOptionDetailsMode = () => {
         setOptionDetailsMode(false);
