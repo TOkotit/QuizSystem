@@ -22,12 +22,12 @@ export const TestSettingsContent = ({ onDataChange, initialData, toggleSettings 
       padding: '12px 16px',
       backgroundColor: '#e0e0e0',
       border: 'none',
-      borderRadius: '0px',
       fontSize: '16px',
       color: '#333',
       outline: 'none',
       fontFamily: 'Arial, sans-serif',
       flex: 1, // To take up equal space in the container
+      borderRadius: '10px'
   };
   const oneSettingStyle = { 
         display: 'flex', gap: '10px', alignItems: 'center', color:'#333'
@@ -64,6 +64,7 @@ export const TestSettingsContent = ({ onDataChange, initialData, toggleSettings 
               <span>Время (мин):</span>
               <input type="number" value={completionTime} 
               onChange={(e) => setCompletionTime(e.target.value)} 
+              placeholder='Неограниченно'
               style={dateTimeInputStyle} />
           </div>
           <div style={oneSettingStyle}>
@@ -79,7 +80,8 @@ export const TestSettingsContent = ({ onDataChange, initialData, toggleSettings 
               <span style={{ }}>Кол-во попыток:</span>
               <input type="number" value={attemptNumber} 
                 onChange={(e) => setAttemptNumber(e.target.value)} 
-                style={dateTimeInputStyle} />
+                style={dateTimeInputStyle}
+                placeholder='Неограниченно' />
           </div>
       </div>
 

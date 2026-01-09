@@ -33,19 +33,6 @@ export const PollCreatorContent = ({ onSave, onDataChange, initialData }) => {
     setOptions(newOptions);
   };
 
-  // // Удаление опции
-  // const handleRemoveOption = (indexToRemove) => {
-  //   // Удаляем опцию по индексу, сохраняя последний пустой элемент, если он есть
-  //   setOptions(prevOptions => {
-  //       const filteredOptions = prevOptions.filter((_, index) => index !== indexToRemove);
-  //       // Убеждаемся, что всегда есть пустой элемент для добавления
-  //       if (filteredOptions.length === 0 || filteredOptions[filteredOptions.length - 1].trim() !== '') {
-  //           return [...filteredOptions, ''];
-  //       }
-  //       return filteredOptions;
-  //   });
-  // };
-
   // Прокрутка вниз при добавлении новой опции
   useEffect(() => {
     if (optionsEndRef.current && options.length > 1 && options[options.length - 1].trim() === '') {
@@ -72,7 +59,8 @@ export const PollCreatorContent = ({ onSave, onDataChange, initialData }) => {
                 padding: '14px 16px', 
                 marginBottom: '20px',
                 color: '#333',
-                fontWeight: 'bold'
+                fontWeight: 'bold',
+                borderRadius: '15px'
             }} 
         />
       </div>
@@ -94,7 +82,7 @@ export const PollCreatorContent = ({ onSave, onDataChange, initialData }) => {
               placeholder={`Вариант ${index + 1}`}
               value={opt}
               onChange={(e) => handleOptionChange(index, e.target.value)}
-              style={{ flexGrow: 1, marginBottom: '10px' }}
+              style={{ flexGrow: 1, marginBottom: '10px',borderRadius: '15px' }}
             />
           </div>
         ))}
@@ -106,7 +94,7 @@ export const PollCreatorContent = ({ onSave, onDataChange, initialData }) => {
           <ActionButton 
               // onSave вызывает handleSave в PollWidget, который делает API-вызов
               onClick={() => onSave()} 
-              style={{ width: '100%' }}
+              style={{ width: '100%', borderRadius: '15px' }}
           >
               Сохранить опрос
           </ActionButton>

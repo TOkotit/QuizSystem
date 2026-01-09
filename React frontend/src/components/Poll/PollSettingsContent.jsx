@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ToggleSwitch, ActionButton, CheckboxSquare } from '../Atoms';
 
 // --- ORGANISM: PollSettingsContent ---
-export const PollSettingsContent = ({ onDataChange, initialData, toggleSettings }) => {
+export const PollSettingsContent = ({ onDataChange, initialData, toggleSettings, onDelete }) => {
   // Инициализация состояний для настроек
   const [isAnonymous, setIsAnonymous] = useState(initialData?.isAnonymous || false);
   const [multipleAnswers, setMultipleAnswers] = useState(initialData?.multipleAnswers || false);
@@ -24,7 +24,7 @@ export const PollSettingsContent = ({ onDataChange, initialData, toggleSettings 
       padding: '12px 16px',
       backgroundColor: '#e0e0e0',
       border: 'none',
-      borderRadius: '0px',
+      borderRadius: '15px',
       fontSize: '16px',
       color: '#333',
       outline: 'none',
@@ -101,10 +101,11 @@ export const PollSettingsContent = ({ onDataChange, initialData, toggleSettings 
               />
           </div>
         </div>
+      
 
       {/* Кнопка "Назад" для возврата к созданию опроса */}
       <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'flex-end', marginTop: 'auto', paddingTop: '20px' }}>
-        <ActionButton onClick={toggleSettings} style={{ width: '100%', borderRadius: '5px' }}>
+        <ActionButton onClick={toggleSettings} style={{ width: '100%', borderRadius: '15px' }}>
           Назад к опросу
         </ActionButton>
       </div>

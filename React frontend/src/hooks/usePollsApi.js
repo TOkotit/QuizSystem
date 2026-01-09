@@ -25,6 +25,9 @@ const apiFetch = async (url, opts = {}) => {
     },
   };
 
+
+
+
   const finalOptions = {
     ...baseOptions,
     ...opts,
@@ -40,11 +43,9 @@ const apiFetch = async (url, opts = {}) => {
   try { data = text ? JSON.parse(text) : null; } catch (e) { data = text; }
 
   if (!res.ok) {
-    const message = (data && (data.detail || data.message)) || res.statusText || 'Ошибка сервера';
-    const err = new Error(message);
-    err.status = res.status;
-    err.data = data;
-    throw err;
+    const error = new Error((data && (data.detail || data.message)) || res.statusText);
+    error.status = res.status;
+    throw error;
   }
   return data;
 };
@@ -55,6 +56,31 @@ export const usePollsApi = (externalApiBaseUrl) => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const deletePoll = useCallback(async (pollId, userId) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await fetchCsrf();
+      const csrfToken = getCsrfToken();
+
+      const data = await apiFetch(`${API_BASE_URL}${pollId}/`, {
+        method: 'DELETE',
+        headers: { 
+            'X-CSRFToken': csrfToken,
+            'X-User-ID': userId
+        },
+      });
+      return data;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+
 
   const fetchAllPolls = useCallback(async () => {
       try {
@@ -94,6 +120,7 @@ export const usePollsApi = (externalApiBaseUrl) => {
       .map(text => ({ choice_text: text }));
 
     const payload = {
+      owner: pollData.ownerID,
       title: pollData.title,
       choices,
       is_anonymous: pollSettings.isAnonymous,
@@ -118,7 +145,21 @@ export const usePollsApi = (externalApiBaseUrl) => {
     }
   }, []);
 
-  const votePoll = useCallback(async (pollId, choiceId) => {
+  const getAllPollVotes = useCallback(async (pollId) => {
+    setLoading(true);
+    setError(null);
+    try {
+     const data = await apiFetch(`${API_BASE_URL}${pollId}/`, { method: 'GET' });
+      return data;
+    } catch (err) {
+      setError(err.message);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [])
+
+  const votePoll = useCallback(async (pollId, voteData) => {
     setLoading(true);
     setError(null);
 
@@ -130,7 +171,31 @@ export const usePollsApi = (externalApiBaseUrl) => {
       const data = await apiFetch(`${API_BASE_URL}${pollId}/vote/`, {
         method: 'POST',
         headers: { 'X-CSRFToken': csrfToken },
-        body: JSON.stringify({ choice_id: choiceId }),
+        body: JSON.stringify({ choice_id: voteData.choiceId,  user: voteData.userId}),
+      });
+      return data;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // --- ДОБАВЛЯЕМ НОВУЮ ФУНКЦИЮ ---
+  const unvotePoll = useCallback(async (pollId, userId) => {
+    setLoading(true);
+    setError(null);
+
+    await fetchCsrf();
+    const csrfToken = getCsrfToken();
+
+    try {
+      // Отправляем POST запрос на /unvote/
+      const data = await apiFetch(`${API_BASE_URL}${pollId}/unvote/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken },
+        body: JSON.stringify({ user: userId }), // Передаем ID пользователя
       });
       return data;
     } catch (err) {
@@ -143,7 +208,6 @@ export const usePollsApi = (externalApiBaseUrl) => {
 
 
 
-
   return {
     createPoll,
     loading,
@@ -153,5 +217,7 @@ export const usePollsApi = (externalApiBaseUrl) => {
     fetchPoll,
     createPoll,
     votePoll,
+    unvotePoll,
+    deletePoll,
   };
 };

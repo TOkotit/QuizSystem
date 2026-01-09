@@ -27,25 +27,31 @@ export const StyledInput = ({ placeholder, value, onChange, style, autoFocus, ty
 );
 
 // --- [2] ATOM: ActionButton ---
-export const ActionButton = ({ onClick, children, style }) => (
+export const ActionButton = ({ onClick, children, style, disabled }) => (
   <button
-    onClick={onClick}
+    onClick={!disabled ? onClick : undefined} // Блокируем клик, если disabled
+    disabled={disabled}                       // Стандартный атрибут HTML
     className="nodrag" 
     style={{
       padding: '10px 30px',
-      backgroundColor: '#d9d9d9',
+      backgroundColor: disabled ? '#f0f0f0' : '#d9d9d9', // Светлее, если выключена
       border: 'none',
       borderRadius: '0px',
       fontSize: '18px',
-      color: '#000',
-      cursor: 'pointer',
+      color: disabled ? '#999' : '#000',               // Серый текст, если выключена
+      cursor: disabled ? 'not-allowed' : 'pointer',    // Меняем курсор
       fontWeight: '400',
       transition: 'background-color 0.2s',
       whiteSpace: 'nowrap',
+      opacity: disabled ? 0.7 : 1,                     // Добавляем прозрачность
       ...style
     }}
-    onMouseOver={(e) => e.target.style.backgroundColor = '#c0c0c0'}
-    onMouseOut={(e) => e.target.style.backgroundColor = '#d9d9d9'}
+    onMouseOver={(e) => {
+      if (!disabled) e.target.style.backgroundColor = '#c0c0c0';
+    }}
+    onMouseOut={(e) => {
+      if (!disabled) e.target.style.backgroundColor = style?.backgroundColor || '#d9d9d9';
+    }}
   >
     {children}
   </button>
@@ -58,7 +64,7 @@ export const ToggleSwitch = ({ checked, onChange }) => (
     <span style={{
       width: '50px',
       height: '28px',
-      backgroundColor: checked ? '#007bff' : '#ccc', // Blue when checked, gray when unchecked
+      backgroundColor: checked ? '#000' : '#ccc', // Blue when checked, gray when unchecked
       borderRadius: '14px',
       position: 'relative',
       transition: 'background-color 0.2s',
@@ -105,9 +111,9 @@ export const CheckboxSquare = ({ checked, onChange }) => (
         display: 'inline-block',
         width: '24px', 
         height: '24px',
-        border: `2px solid ${checked ? '#007bff' : '#6c757d'}`, 
+        border: `2px solid ${checked ? '#000' : '#6c757d'}`, 
         borderRadius: '4px', 
-        backgroundColor: checked ? '#007bff' : '#fff', 
+        backgroundColor: checked ? '#000' : '#fff', 
         transition: 'background-color 0.2s, border-color 0.2s',
         position: 'relative',
         flexShrink: 0,
@@ -202,7 +208,7 @@ export const RadioButton = ({ id, name, value, checked, onChange, children }) =>
         width: '20px',
         height: '20px',
         borderRadius: '50%', // Делает его круглым
-        border: `2px solid ${checked ? '#007bff' : '#6c757d'}`, // Синяя рамка при checked
+        border: `2px solid ${checked ? '#000' : '#6c757d'}`, // Синяя рамка при checked
         backgroundColor: '#fff',
         position: 'relative',
         flexShrink: 0,
@@ -220,7 +226,7 @@ export const RadioButton = ({ id, name, value, checked, onChange, children }) =>
             width: '10px', // Размер внутренней точки
             height: '10px',
             borderRadius: '50%',
-            backgroundColor: '#007bff', // Синяя внутренняя точка
+            backgroundColor: '#000', // Синяя внутренняя точка
             transition: 'opacity 0.2s',
             opacity: 1,
           }}
