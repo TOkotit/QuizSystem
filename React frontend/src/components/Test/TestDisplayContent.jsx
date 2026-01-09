@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ActionButton, RadioButton, CheckboxSquare } from '../Atoms';
 import { useTestsApi } from '../../hooks/useTestsApi';
 
@@ -22,6 +22,23 @@ export const TestDisplayContent = ({ testData, setTestData }) => {
     const remainingAttempts = testData.attempt_number - userAttempts.length;
 
     const [testCreatorPreviewVisibility, setTestCreatorPreviewVisibility] = useState(false);
+
+    // --- Состояние для таймера (в секундах) ---
+    const [timeLeft, setTimeLeft] = useState(null); 
+    // --- Реф для предотвращения двойной отправки ---
+    const isSubmittingRef = useRef(false);
+
+    // --- Проверка истечения срока действия теста ---
+    const isTestExpired = () => {
+        if (!testData.end_date) return false;
+        
+        const expiryDate = new Date(testData.end_date);
+        const now = new Date();
+        
+        return now > expiryDate;
+    };
+    
+    const testExpired = isTestExpired();
 
     // ЖЕСТКАЯ ПРОВЕРКА: Инициализация как в рабочих опросах
     useEffect(() => {
@@ -55,6 +72,32 @@ export const TestDisplayContent = ({ testData, setTestData }) => {
         });
     };
 
+    // --- ЛОГИКА ТАЙМЕРА ---
+    useEffect(() => {
+        // Запускаем таймер только если тест начат, не завершен и время задано
+        if (testBeginningMode || resultMode || timeLeft === null) return;
+
+        if (timeLeft <= 0) {
+            // Время вышло — отправляем тест
+            handleFinishTest();
+            return;
+        }
+
+        const timerId = setInterval(() => {
+            setTimeLeft((prev) => prev - 1);
+        }, 1000);
+
+        return () => clearInterval(timerId);
+    }, [timeLeft, testBeginningMode, resultMode]);
+
+
+    // Форматирование времени MM:SS
+    const formatTime = (seconds) => {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    };
+
     const handleSetPreviousTask = () => {
         if (activeTaskIndex > 0){
             setActiveTaskIndex(activeTaskIndex - 1)
@@ -79,6 +122,10 @@ export const TestDisplayContent = ({ testData, setTestData }) => {
 
 
     const handleFinishTest = async () => {
+        // Предотвращение повторного вызова
+        if (isSubmittingRef.current) return;
+        isSubmittingRef.current = true;
+
         // Собираем данные для отправки (test_id, ответы и имя пользователя)
         const payload = {
                 test: testId,
@@ -111,10 +158,26 @@ export const TestDisplayContent = ({ testData, setTestData }) => {
 
         } catch (err) {
             console.error("Ошибка:", err);
+        } finally {
+            isSubmittingRef.current = false;
         }
     };
     const handleStartTest = () => {
+        // Проверка на просрочку еще раз перед стартом
+        if (isTestExpired()) {
+            alert("Время прохождения теста истекло.");
+            return;
+        }
+
         initializeTasks();
+        
+        // --- Установка таймера ---
+        if (testData.completion_time && testData.completion_time > 0) {
+            setTimeLeft(testData.completion_time * 60); // Переводим минуты в секунды
+        } else {
+            setTimeLeft(null); // Без ограничений
+        }
+
         setTestBeginningMode(false);
     }
     const handleQuitResult = () => {
@@ -139,9 +202,33 @@ export const TestDisplayContent = ({ testData, setTestData }) => {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', width: '100%', color: '#000', }}>
-            <h3 style={{ color: '#000', marginBottom: '15px' }}>{title}</h3>
+            {/* --- Заголовок с таймером во время теста --- */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                <h3 style={{ color: '#000', margin: 0 }}>{title}</h3>
+                
+                {!testBeginningMode && !resultMode && timeLeft !== null && (
+                    <div style={{ 
+                        fontWeight: 'bold', 
+                        fontSize: '18px', 
+                        color: timeLeft < 60 ? 'red' : '#00a2ff', // Красный цвет если осталось меньше минуты
+                        border: '1px solid #ccc',
+                        padding: '5px 10px',
+                        borderRadius: '5px'
+                    }}>
+                        ⏱ {formatTime(timeLeft)}
+                    </div>
+                )}
+            </div>
+
+
             {/* Режим создателя */}
             {testData?.owner === currentUserId && (<div>
+                <div style={{marginBottom: '15px'}}>
+                            <p>Заданий: {tasks.length}</p>
+                            {testData.completion_time && <p>Время: {testData.completion_time} мин.</p>}
+                            {testData.end_date && <p>Доступно до: {(new Date(testData.end_date)).toLocaleDateString()} {(new Date(testData.end_date)).toLocaleTimeString()}</p>}
+                            <p>Попыток: {testData.attempt_number}</p>
+                        </div>
                 <div 
                     onClick={() => setTestCreatorPreviewVisibility((prev) => !prev)} 
                     style={{cursor: 'pointer', fontWeight: 'bold', marginBottom: '10px', display: 'flex', gap:'5px'}}
@@ -292,12 +379,28 @@ export const TestDisplayContent = ({ testData, setTestData }) => {
                             <p>Автор: {testData.owner}</p>
                             <p>Заданий: {tasks.length}</p>
                             {testData.completion_time && <p>Время: {testData.completion_time} мин.</p>}
-                            {testData.end_date && <p>Доступно до: {testData.end_date} {testData.end_time}</p>}
+                            {testData.end_date && <p>Доступно до: {(new Date(testData.end_date)).toLocaleDateString()} {(new Date(testData.end_date)).toLocaleTimeString()}</p>}
                             <p>Попыток: {remainingAttempts}/{testData.attempt_number}</p>
                         </div>
-                        <ActionButton onClick={handleStartTest}
-                            style={{borderRadius: "10px"}}
-                            disabled={remainingAttempts <= 0}>Начать тест</ActionButton>
+                        
+                        {testExpired ? (
+                            <div style={{ 
+                                padding: '10px', 
+                                backgroundColor: '#ffdddd', 
+                                color: 'red', 
+                                borderRadius: '10px', 
+                                textAlign: 'center',
+                                fontWeight: 'bold' 
+                            }}>
+                                Срок прохождения теста истек
+                            </div>
+                        ) : (
+                            <ActionButton onClick={handleStartTest}
+                                style={{borderRadius: "10px"}}
+                                disabled={remainingAttempts <= 0}>
+                                Начать тест
+                            </ActionButton>
+                        )}
                         
                         {/* --- СЕКЦИЯ С личными РЕЗУЛЬТАТАМИ --- */}
                         {(userAttempts && userAttempts.length > 0) ? (
