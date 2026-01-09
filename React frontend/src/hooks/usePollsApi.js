@@ -182,6 +182,29 @@ export const usePollsApi = (externalApiBaseUrl) => {
     }
   }, []);
 
+  // --- ДОБАВЛЯЕМ НОВУЮ ФУНКЦИЮ ---
+  const unvotePoll = useCallback(async (pollId, userId) => {
+    setLoading(true);
+    setError(null);
+
+    await fetchCsrf();
+    const csrfToken = getCsrfToken();
+
+    try {
+      // Отправляем POST запрос на /unvote/
+      const data = await apiFetch(`${API_BASE_URL}${pollId}/unvote/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken },
+        body: JSON.stringify({ user: userId }), // Передаем ID пользователя
+      });
+      return data;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
 
 
@@ -194,6 +217,7 @@ export const usePollsApi = (externalApiBaseUrl) => {
     fetchPoll,
     createPoll,
     votePoll,
+    unvotePoll,
     deletePoll,
   };
 };

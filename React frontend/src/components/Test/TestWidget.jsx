@@ -19,7 +19,7 @@ const TestWidget = ({ initialTitle, pollId: testId }) => {
     const [isDataLoaded, setIsDataLoaded] = useState(false);
     const [currentUserId, setCurrentUserId] = useState(null);
     const [testCreationData, setTestCreationData] = useState({
-        ownerID: '',
+        owner: '',
         title: initialTitle || '',
         tasks: []
     });
@@ -60,7 +60,7 @@ const TestWidget = ({ initialTitle, pollId: testId }) => {
                     title: serverTest.title,
                     tasks: serverTest.tasks || [],
                     all_attempts: serverTest.all_attempts,
-                    ownerID: serverTest.owner
+                    owner: serverTest.owner
                 });
 
                 if (serverTest.settings) 
@@ -115,7 +115,7 @@ const TestWidget = ({ initialTitle, pollId: testId }) => {
             const result = await createTest(testCreationData, testSettingsData);
             if (result && result.id) {
                 setSavedTestData(result); 
-                
+                setIsDataLoaded(true);
                 setViewMode('display'); 
             }
         } catch (err) {
@@ -172,7 +172,6 @@ const TestWidget = ({ initialTitle, pollId: testId }) => {
             )}
             
             {viewMode === 'display' && isDataLoaded &&(
-
 
                 <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column' }}>
         

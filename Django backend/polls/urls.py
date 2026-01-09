@@ -12,6 +12,7 @@ urlpatterns = [
     path('list/', views.PollListCreateAPIView.as_view(), name='poll-list'),
     path('<int:pk>/', views.PollRetrieveUpdateDestroyAPIView.as_view(), name='poll-detail'),
     path('<int:poll_id>/vote/', views.VoteCreateAPIView.as_view(), name='poll-vote'),
+    path('<int:poll_id>/unvote/', views.VoteCancelAPIView.as_view(), name='poll-unvote'),
 
     # 2. ТЕСТЫ (Tests) - Пути: /api/tests/...
     path('tests/', views.TestListCreateAPIView.as_view(), name='test-list-create'),

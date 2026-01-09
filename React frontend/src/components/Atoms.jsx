@@ -64,7 +64,7 @@ export const ToggleSwitch = ({ checked, onChange }) => (
     <span style={{
       width: '50px',
       height: '28px',
-      backgroundColor: checked ? '#007bff' : '#ccc', // Blue when checked, gray when unchecked
+      backgroundColor: checked ? '#000' : '#ccc', // Blue when checked, gray when unchecked
       borderRadius: '14px',
       position: 'relative',
       transition: 'background-color 0.2s',
@@ -111,9 +111,9 @@ export const CheckboxSquare = ({ checked, onChange }) => (
         display: 'inline-block',
         width: '24px', 
         height: '24px',
-        border: `2px solid ${checked ? '#007bff' : '#6c757d'}`, 
+        border: `2px solid ${checked ? '#000' : '#6c757d'}`, 
         borderRadius: '4px', 
-        backgroundColor: checked ? '#007bff' : '#fff', 
+        backgroundColor: checked ? '#000' : '#fff', 
         transition: 'background-color 0.2s, border-color 0.2s',
         position: 'relative',
         flexShrink: 0,
@@ -208,7 +208,7 @@ export const RadioButton = ({ id, name, value, checked, onChange, children }) =>
         width: '20px',
         height: '20px',
         borderRadius: '50%', // Делает его круглым
-        border: `2px solid ${checked ? '#007bff' : '#6c757d'}`, // Синяя рамка при checked
+        border: `2px solid ${checked ? '#000' : '#6c757d'}`, // Синяя рамка при checked
         backgroundColor: '#fff',
         position: 'relative',
         flexShrink: 0,
@@ -226,7 +226,7 @@ export const RadioButton = ({ id, name, value, checked, onChange, children }) =>
             width: '10px', // Размер внутренней точки
             height: '10px',
             borderRadius: '50%',
-            backgroundColor: '#007bff', // Синяя внутренняя точка
+            backgroundColor: '#000', // Синяя внутренняя точка
             transition: 'opacity 0.2s',
             opacity: 1,
           }}
