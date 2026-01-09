@@ -20,6 +20,9 @@ export const TestDisplayContent = ({ testData, setTestData }) => {
 
     const userAttempts = testData?.all_attempts.filter(v => v.user === String(currentUserId));
     const remainingAttempts = testData.attempt_number - userAttempts.length;
+
+    const [testCreatorPreviewVisibility, setTestCreatorPreviewVisibility] = useState(false);
+
     // ЖЕСТКАЯ ПРОВЕРКА: Инициализация как в рабочих опросах
     useEffect(() => {
         initializeTasks
@@ -137,7 +140,109 @@ export const TestDisplayContent = ({ testData, setTestData }) => {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', width: '100%', color: '#000', }}>
             <h3 style={{ color: '#000', marginBottom: '15px' }}>{title}</h3>
+            {/* Режим создателя */}
             {testData?.owner === currentUserId && (<div>
+                <div 
+                    onClick={() => setTestCreatorPreviewVisibility((prev) => !prev)} 
+                    style={{cursor: 'pointer', fontWeight: 'bold', marginBottom: '10px', display: 'flex', gap:'5px'}}
+                >
+                    <span>Посмотреть задания</span>
+                    <span>{testCreatorPreviewVisibility ? '▲' : '▼'}</span>
+                </div>
+                {testCreatorPreviewVisibility && (<div>
+                    {/* Табы вопросов */}
+                    <div style={{ display: 'flex',
+                        borderBottom: '2px solid #333' }}>
+                        <ActionButton onClick={handleSetPreviousTask}
+                            style={{borderRadius:'10px'}}>
+                            ←
+                        </ActionButton>
+                        <div style={{ display: 'flex', overflowX: 'auto' }}>
+                            {tasks.map((_, index) => (
+                                <div 
+                                    key={index}
+                                    onClick={() => setActiveTaskIndex(index)}
+                                    style={{
+                                        padding: '8px 12px',
+                                        cursor: 'pointer',
+                                        backgroundColor: index === activeTaskIndex ? '#00a2ff' : '#eee',
+                                        color: index === activeTaskIndex ? '#fff' : '#000',
+                                        marginRight: '2px',
+                                        borderRadius: '5px 5px 0 0',
+                                        minWidth:'25px',
+                                        textAlign: 'center'
+                                    }}
+                                >
+                                    {index + 1}
+                                </div>
+                            ))}
+                        </div>
+                        <ActionButton onClick={handleSetNextTask}
+                            style={{borderRadius:'10px', marginLeft: 'auto'}}>
+                            →
+                        </ActionButton>
+                    </div>
+                    {/* область самого задания */}
+                    <div style={{ color: '#000' }}>
+                        {/* текст задания */}
+                        <p style={{fontWeight: 'bold'}}>{tasks[activeTaskIndex]?.question}</p>
+                        
+                        {/* тип текст */}
+                        {tasks[activeTaskIndex]?.task_type === 'text' && (
+                            <textarea 
+                                value={tasks[activeTaskIndex].correct_text}
+                                style={{ width: '100%', height: '80px', padding: '5px' }}
+                            />
+                        )}
+
+                        {/* тип один выбор */}
+                        {tasks[activeTaskIndex]?.task_type === 'single' && 
+                            tasks[activeTaskIndex].options.map((opt, i) => (
+                                <div key={i} 
+                                    style={{ display: 'flex', alignItems: 'center', marginBottom: '15px', cursor: 'pointer', gap:"10px" }}>
+                                    <RadioButton 
+                                        checked={opt.is_correct}
+                                    />
+                                    <div 
+                                        style={{ flexGrow: 1, 
+                                        display: 'flex', 
+                                        justifyContent: 'space-between', 
+                                        backgroundColor: opt.is_correct ? '#d0d0d0' : '#e0e0e0', 
+                                        padding: '12px 16px', 
+                                        borderRadius: "10px", 
+                                        position: 'relative', 
+                                        overflow: 'hidden' }}>
+                                        <span >{opt.text}</span>
+                                    </div>   
+                                </div> 
+                        ))}
+
+                        {/* тип несколько ответов */}
+                        {tasks[activeTaskIndex]?.task_type === 'multiple' && 
+                            tasks[activeTaskIndex].options.map((opt, i) => (
+                                <div key={i}  
+                                    style={{ display: 'flex', alignItems: 'center', marginBottom: '15px', cursor: 'pointer', gap:"10px" }}>
+                                    <CheckboxSquare 
+                                        checked={opt.is_correct}
+                                    />
+                                    <div
+                                        style={{ flexGrow: 1, 
+                                        display: 'flex', 
+                                        justifyContent: 'space-between', 
+                                        backgroundColor: opt.is_correct ? '#d0d0d0' : '#e0e0e0', 
+                                        padding: '12px 16px', 
+                                        borderRadius: "10px", 
+                                        position: 'relative', 
+                                        overflow: 'hidden' }}>
+                                        <span >{opt.text}</span>
+                                    </div>   
+                                </div> 
+                        ))}
+                    </div>
+                </div>)}
+                
+
+
                 {/* --- СЕКЦИЯ С ВСЕМИ РЕЗУЛЬТАТАМИ --- */}
                 {(testData?.all_attempts && testData?.all_attempts.length > 0) ? (
                     <div style={{ marginBottom: '20px', textAlign: 'left' }}>
@@ -177,6 +282,7 @@ export const TestDisplayContent = ({ testData, setTestData }) => {
                     </div>)}
             </div>)}
             
+            {/* режим прохождения */}
             {testData?.owner !== currentUserId && (<div>
                 {/* начало теста */}
                 {testBeginningMode ? (
