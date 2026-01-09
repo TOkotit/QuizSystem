@@ -189,10 +189,9 @@ export const TestDisplayContent = ({ testData, setTestData }) => {
                         
                         {/* тип текст */}
                         {tasks[activeTaskIndex]?.task_type === 'text' && (
-                            <textarea 
-                                value={tasks[activeTaskIndex].correct_text}
-                                style={{ width: '100%', height: '80px', padding: '5px' }}
-                            />
+                            <span>
+                                Ответ: {tasks[activeTaskIndex].correct_text}
+                            </span>
                         )}
 
                         {/* тип один выбор */}
@@ -202,6 +201,7 @@ export const TestDisplayContent = ({ testData, setTestData }) => {
                                     style={{ display: 'flex', alignItems: 'center', marginBottom: '15px', cursor: 'pointer', gap:"10px" }}>
                                     <RadioButton 
                                         checked={opt.is_correct}
+                                        onChange={() => {}}
                                     />
                                     <div 
                                         style={{ flexGrow: 1, 
@@ -224,6 +224,7 @@ export const TestDisplayContent = ({ testData, setTestData }) => {
                                     style={{ display: 'flex', alignItems: 'center', marginBottom: '15px', cursor: 'pointer', gap:"10px" }}>
                                     <CheckboxSquare 
                                         checked={opt.is_correct}
+                                        onChange={() => {}}
                                     />
                                     <div
                                         style={{ flexGrow: 1, 
