@@ -32,9 +32,7 @@ export const TestDisplayContent = ({ testData, setTestData }) => {
     const isTestExpired = () => {
         if (!testData.end_date) return false;
         
-        // Собираем дату и время в строку ISO. Если времени нет, ставим конец дня.
-        const timePart = testData.end_time || '23:59:59';
-        const expiryDate = new Date(`${testData.end_date}T${timePart}`);
+        const expiryDate = new Date(testData.end_date);
         const now = new Date();
         
         return now > expiryDate;
@@ -225,6 +223,12 @@ export const TestDisplayContent = ({ testData, setTestData }) => {
 
             {/* Режим создателя */}
             {testData?.owner === currentUserId && (<div>
+                <div style={{marginBottom: '15px'}}>
+                            <p>Заданий: {tasks.length}</p>
+                            {testData.completion_time && <p>Время: {testData.completion_time} мин.</p>}
+                            {testData.end_date && <p>Доступно до: {(new Date(testData.end_date)).toLocaleDateString()} {(new Date(testData.end_date)).toLocaleTimeString()}</p>}
+                            <p>Попыток: {testData.attempt_number}</p>
+                        </div>
                 <div 
                     onClick={() => setTestCreatorPreviewVisibility((prev) => !prev)} 
                     style={{cursor: 'pointer', fontWeight: 'bold', marginBottom: '10px', display: 'flex', gap:'5px'}}
@@ -375,12 +379,28 @@ export const TestDisplayContent = ({ testData, setTestData }) => {
                             <p>Автор: {testData.owner}</p>
                             <p>Заданий: {tasks.length}</p>
                             {testData.completion_time && <p>Время: {testData.completion_time} мин.</p>}
-                            {testData.end_date && <p>Доступно до: {testData.end_date} {testData.end_time}</p>}
+                            {testData.end_date && <p>Доступно до: {(new Date(testData.end_date)).toLocaleDateString()} {(new Date(testData.end_date)).toLocaleTimeString()}</p>}
                             <p>Попыток: {remainingAttempts}/{testData.attempt_number}</p>
                         </div>
-                        <ActionButton onClick={handleStartTest}
-                            style={{borderRadius: "10px"}}
-                            disabled={remainingAttempts <= 0}>Начать тест</ActionButton>
+                        
+                        {testExpired ? (
+                            <div style={{ 
+                                padding: '10px', 
+                                backgroundColor: '#ffdddd', 
+                                color: 'red', 
+                                borderRadius: '10px', 
+                                textAlign: 'center',
+                                fontWeight: 'bold' 
+                            }}>
+                                Срок прохождения теста истек
+                            </div>
+                        ) : (
+                            <ActionButton onClick={handleStartTest}
+                                style={{borderRadius: "10px"}}
+                                disabled={remainingAttempts <= 0}>
+                                Начать тест
+                            </ActionButton>
+                        )}
                         
                         {/* --- СЕКЦИЯ С личными РЕЗУЛЬТАТАМИ --- */}
                         {(userAttempts && userAttempts.length > 0) ? (

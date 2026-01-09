@@ -78,14 +78,24 @@ const createTest = useCallback(async (testCreationData, testSettingsData) => {
     setLoading(true);
     setError(null);
     try {
+      let formattedEndDate = null;
+
+      if (testSettingsData.endDate) {
+        // 1. Создаем объект даты из строки даты и времени (местное время пользователя)
+        const localDateTime = new Date(`${testSettingsData.endDate}T${testSettingsData.endTime || '23:59:59'}`);
+        
+        // 2. Преобразуем в ISO строку (она всегда в GMT 0 / UTC)
+        // Результат будет в формате: "2023-10-25T20:59:59.000Z"
+        formattedEndDate = localDateTime.toISOString();
+      }
       const payload = {
         title: testCreationData.title,
         owner: localStorage.getItem('userId') || 'Anonymous',
         tasks: testCreationData.tasks.map(task => ({
             question: task.question,
-            task_type: task.type, // исправляем type -> task_type
+            task_type: task.type, 
             score: task.score,
-            correct_text: task.correctText, // исправляем
+            correct_text: task.correctText, 
             options: task.options.filter(o => o.trim() !== '').map(opt => ({
                 text: opt,
                 is_correct: task.type === 'single' 
@@ -98,7 +108,7 @@ const createTest = useCallback(async (testCreationData, testSettingsData) => {
         completion_time: testSettingsData.completionTime === '' ? null : parseInt(testSettingsData.completionTime),
         attempt_number: testSettingsData.attemptNumber === '' ? null : parseInt(testSettingsData.attemptNumber),
         // Собираем end_date из даты и времени, если нужно, или передаем как есть
-        end_date: testSettingsData.endDate ? `${testSettingsData.endDate}T${testSettingsData.endTime || '00:00'}` : null
+        end_date: formattedEndDate ? formattedEndDate : null
       };
 
       return await apiFetch(API_BASE_URL, {
