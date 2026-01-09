@@ -186,7 +186,7 @@ export const TestDisplayContent = ({ testData, setTestData }) => {
                             <p>Заданий: {tasks.length}</p>
                             {testData.completion_time && <p>Время: {testData.completion_time} мин.</p>}
                             {testData.end_date && <p>Доступно до: {testData.end_date} {testData.end_time}</p>}
-                            <p>Попыток: {remainingAttempts}</p>
+                            <p>Попыток: {remainingAttempts}/{testData.attempt_number}</p>
                         </div>
                         <ActionButton onClick={handleStartTest}
                             style={{borderRadius: "10px"}}
