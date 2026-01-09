@@ -1,12 +1,15 @@
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import ensure_csrf_cookie
+from django.db import transaction
+from django.db.models import F
 
-from .models import Poll, Test, TestAttempt
+from .models import Choice, Poll, Test, TestAttempt, Vote
 from .serializers import (
     PollCreateSerializer,
     PollDetailSerializer,
@@ -69,6 +72,40 @@ class VoteCreateAPIView(generics.CreateAPIView):
             status=status.HTTP_201_CREATED
         )
 
+class VoteCancelAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, poll_id):
+        # Получаем ID пользователя из тела запроса
+        user_id = request.data.get('user')
+        
+        if not user_id:
+            return Response({"error": "User ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Находим опрос
+        poll = get_object_or_404(Poll, id=poll_id)
+
+        # Находим все голоса этого пользователя в этом опросе
+        votes = Vote.objects.filter(poll=poll, user=user_id)
+
+        if not votes.exists():
+            return Response({"message": "Голоса не найдены"}, status=status.HTTP_404_NOT_FOUND)
+
+        with transaction.atomic():
+            # Проходим по голосам, чтобы уменьшить счетчики
+            for vote in votes:
+                # Уменьшаем счетчик голосов у варианта (Choice)
+                # Используем F expression для атомарности (защита от гонки потоков)
+                Choice.objects.filter(id=vote.choice.id).update(votes_count=F('votes_count') - 1)
+            
+            # Удаляем записи о голосах
+            votes.delete()
+
+        # Возвращаем обновленные данные опроса, чтобы фронтенд сразу перерисовался
+        return Response(
+            PollDetailSerializer(poll, context={'request': request}).data,
+            status=status.HTTP_200_OK
+        )
 
 # --- TESTS ---
 class TestListCreateAPIView(generics.ListCreateAPIView):

@@ -17,7 +17,7 @@ export const PollDisplayContent = ({ pollData, setPollData }) => {
     } = pollData;
 
     // --- API: ПОДКЛЮЧЕНИЕ ХУКА ---
-    const { votePoll, loading, error, setError, fetchPoll } = usePollsApi();
+    const { votePoll, loading, error, setError, fetchPoll, unvotePoll } = usePollsApi();
 
     // Достаем то самое имя пользователя, которое "другой человек" сохранил в localStorage
     const currentUserId = localStorage.getItem('userId') || 'Anonymous';
@@ -67,48 +67,73 @@ export const PollDisplayContent = ({ pollData, setPollData }) => {
 
     }
 
-const handleVote = async () => {
-    // Если ничего не выбрано - выходим
-    if ((!multiple_answers && !selectedOption) || (multiple_answers && selectedCheckboxes.length === 0)) return;
+    const handleVote = async () => {
+        // Если ничего не выбрано - выходим
+        if ((!multiple_answers && !selectedOption) || (multiple_answers && selectedCheckboxes.length === 0)) return;
 
-   
-    try {
-        let success = true;
-        if (multiple_answers) {
-            // 1. Создаем массив промисов (запросов)
-            const votePromises = selectedCheckboxes.map(checkbox => 
-                votePoll(pollId, {
-                    choiceId: checkbox,
-                    userId: currentUserId
-                })
-            );
+        try {
+            let success = true;
+            if (multiple_answers) {
+                // 1. Создаем массив промисов (запросов)
+                const votePromises = selectedCheckboxes.map(checkbox => 
+                    votePoll(pollId, {
+                        choiceId: checkbox,
+                        userId: currentUserId
+                    })
+                );
 
-            // 2. Ждем, пока ВСЕ запросы выполнятся
-            try {
-                await Promise.all(votePromises);
-                success = true;
-            } catch (e) {
-                console.error("Один из голосов не прошел", e);
-                success = false;
+                // 2. Ждем, пока ВСЕ запросы выполнятся
+                try {
+                    await Promise.all(votePromises);
+                    success = true;
+                } catch (e) {
+                    console.error("Один из голосов не прошел", e);
+                    success = false;
+                }
             }
-        }
-        else{
-            success = await votePoll(pollId,
-            {choiceId: selectedOption,
-            userId: currentUserId
-            });
-        }
+            else{
+                success = await votePoll(pollId,
+                {choiceId: selectedOption,
+                userId: currentUserId
+                });
+            }
 
-        if (success) {
-            setIsSaved(true);
-            // Обновляем данные опроса, чтобы сразу увидеть результаты
-            if (fetchPoll) fetchPoll(pollId).then(data => setPollData(data));
+            if (success) {
+                setIsSaved(true);
+                // Обновляем данные опроса, чтобы сразу увидеть результаты
+                if (fetchPoll) fetchPoll(pollId).then(data => setPollData(data));
+            }
+        } catch (err) {
+            console.error("Ошибка при голосовании:", err);
+            setError("Не удалось сохранить голос");
         }
-    } catch (err) {
-        console.error("Ошибка при голосовании:", err);
-        setError("Не удалось сохранить голос");
-    }
-};  
+    };  
+
+    const handleUnvote = async () => {
+        try {
+            // Вызываем API для удаления голоса
+            const updatedPollData = await unvotePoll(pollId, currentUserId);
+            
+            // Если сервер вернул обновленные данные, устанавливаем их
+            if (updatedPollData) {
+                setPollData(updatedPollData);
+            } else if (fetchPoll) {
+                // Иначе запрашиваем принудительно
+                const freshData = await fetchPoll(pollId);
+                setPollData(freshData);
+            }
+
+            // Сбрасываем локальные состояния
+            setIsSaved(false); // Разрешаем снова голосовать
+            setUsersVote(null); // Убираем отметку "ваш голос"
+            setSelectedOption(null);
+            setSelectedCheckboxes([]);
+            
+        } catch (err) {
+            console.error("Ошибка при отмене голоса:", err);
+            setError("Не удалось отменить голос");
+        }
+    };
 
     const pr = new Intl.PluralRules('ru-RU');
 
@@ -215,14 +240,38 @@ const handleVote = async () => {
                     })}
                 </div>)}
 
-                <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
-                    <ActionButton 
-                        onClick={handleVote} 
-                        disabled={isVoteDisabled}
-                        style={{ width: '100%', backgroundColor: '#d9d9d9', borderRadius: "10px" }}
-                    >
-                        {loading ? 'Отправка...' : (isSaved ? 'Голос принят' : 'Сохранить')}
-                    </ActionButton>
+                <div style={{ marginTop: 'auto', paddingTop: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    
+                    {/* Кнопка голосования (существующая) */}
+                    {!isSaved && (
+                        <ActionButton 
+                            onClick={handleVote} 
+                            disabled={isVoteDisabled}
+                            style={{ width: '100%', backgroundColor: '#d9d9d9', borderRadius: "10px" }}
+                        >
+                            {loading ? 'Отправка...' : 'Сохранить'}
+                        </ActionButton>
+                    )}
+
+                    {/* 3. Кнопка "ОТМЕНИТЬ ГОЛОС" - показываем только если isSaved === true */}
+                    {isSaved && (
+                        <div style={{textAlign: 'center', width: '100%'}}>
+                            <div style={{ marginBottom: '10px', fontWeight: 'bold', color: '#4caf50' }}>
+                                Голос принят!
+                            </div>
+                            <ActionButton 
+                                onClick={handleUnvote} 
+                                disabled={loading}
+                                style={{ 
+                                    width: '100%', 
+                                    borderRadius: "10px",
+                                }}
+                            >
+                                {loading ? 'Отмена...' : 'Отменить мой голос'}
+                            </ActionButton>
+                        </div>
+                    )}
+
                 </div>
             </div>)}
             
