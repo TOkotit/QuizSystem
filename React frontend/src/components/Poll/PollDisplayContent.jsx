@@ -152,7 +152,19 @@ export const PollDisplayContent = ({ pollData, setPollData }) => {
 
 
     return (
-        <div className="nodrag" style={{ display: 'flex', color: '#000', flexDirection: 'column', height: '100%', width: '100%', overflowY: 'auto', paddingRight: '5px' }} onWheel={(e) => e.stopPropagation()}>
+            <div 
+                className="nodrag nowheel" 
+                onWheel={(e) => e.stopPropagation()} 
+                style={{ 
+                    display: 'flex', 
+                    color: '#000', 
+                    flexDirection: 'column', 
+                    height: '100%', 
+                    width: '100%', 
+                    overflow: 'hidden',
+                    paddingRight: '5px' 
+                }} 
+            >
             <div style={{ flexShrink: 0, width: '100%' }}>
                 <h3 style={{ fontSize: '22px', fontWeight: 'bold', backgroundColor: '#e0e0e0', padding: '12px 16px', borderRadius: "10px" }}>
                     {title}
@@ -198,7 +210,16 @@ export const PollDisplayContent = ({ pollData, setPollData }) => {
 
             {!optionDetailsMode && (<div style={{ display: 'flex', color: '#000', flexDirection: 'column', height: '100%', width: '100%', overflowY: 'auto'}}>
                 {/* Вид после выбора */}
-                {isSaved ? (<div style={{ flexGrow: 1, overflowY: 'auto' }}>
+                {isSaved ? (
+                    <div 
+                        className="scroll-container nowheel"
+                        style={{ 
+                            flexGrow: 1, 
+                            overflowY: 'auto', 
+                            minHeight: 0,
+                            paddingRight: '5px'
+                        }}
+                    >
                     {choices?.map((choice) => {
                         const percent = getPercentage(choice.votes_count);
 
@@ -218,7 +239,16 @@ export const PollDisplayContent = ({ pollData, setPollData }) => {
                             </div>
                         );
                     })}
-                </div>) : (<div style={{ flexGrow: 1, overflowY: 'auto' }}>
+                </div>) : (
+                    <div 
+                        className="scroll-container nowheel"
+                        style={{ 
+                            flexGrow: 1, 
+                            overflowY: 'auto', 
+                            minHeight: 0,
+                            paddingRight: '5px'
+                        }}
+                    >
                     {/* Вид до выбора */}
                     {choices?.map((choice) => {
                         const choiceId = choice.id;
