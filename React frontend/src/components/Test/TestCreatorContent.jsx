@@ -127,15 +127,19 @@ export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
     });
 
     return (
-        <div style={{ display: 'flex', 
+        <div 
+            style={{ 
+                display: 'flex', 
                 flexDirection: 'column', 
                 height: '100%', 
                 width: '100%', 
-                }}
-            className='nodrag'>
+                overflow: 'hidden' // Фиксируем размер, чтобы не раздувало карту
+            }}
+            className='nodrag nowheel' // nowheel отключает зум React Flow
+        >
             
-            {/* 1. Заголовок теста */}
-            <div>
+            {/* 1. Заголовок теста (Фиксированный) */}
+            <div style={{ flexShrink: 0 }}>
                 <StyledInput
                     placeholder="Название теста" 
                     value={title} 
@@ -147,9 +151,8 @@ export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
                 />
             </div> 
 
-            {/* 3. НАВИГАЦИЯ ПО ЗАДАНИЯМ (ТАБЫ) */}
-            <div style={{ display: 'flex',
-                borderBottom: '2px solid #333' }}>
+            {/* 3. НАВИГАЦИЯ ПО ЗАДАНИЯМ (Фиксированная) */}
+            <div style={{ display: 'flex', borderBottom: '2px solid #333', flexShrink: 0 }}>
                 <ActionButton onClick={handleSetPreviousTask}
                     style={{borderRadius:'10px'}}>
                     {"←"}
@@ -178,30 +181,30 @@ export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
                 </ActionButton>
             </div>
 
-            {/* 4. РЕДАКТОР ТЕКУЩЕГО ЗАДАНИЯ */}
-            <div style={{
-                padding:'10px',
-                height:'100%',
-                overflowY: 'auto',
-                marginBottom:'20px',
-                color: '#333', }}>
+            {/* 4. РЕДАКТОР ТЕКУЩЕГО ЗАДАНИЯ (ПРОКРУЧИВАЕМЫЙ) */}
+            <div 
+                className="nowheel" 
+                onWheel={(e) => e.stopPropagation()} // Останавливаем всплытие скролла к карте
+                style={{
+                    padding:'10px',
+                    flexGrow: 1,      // Занимает все свободное место
+                    minHeight: 0,     // Нужно для активации overflow в flex-контейнере
+                    overflowY: 'auto', // Включаем скролл
+                    marginBottom:'10px',
+                    color: '#333'
+                }}
+            >
                 {activeTaskIndex !== null && tasks[activeTaskIndex] ? (
-                    <div style={{display: 'flex',
-                            flexDirection: 'column',
-                            gap: '10px',
-                             }}>
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
 
-                        <div style={{ display: 'flex', 
-                            flex:1,
-                            flexDirection: 'column',
-                            gap: '10px', }}>
+                        <div style={{ display: 'flex', flex:1, flexDirection: 'column', gap: '10px' }}>
                             <label style={{fontSize: '18px',fontWeight:'bold',}}>Вопрос:</label>
                             <textarea
                                 value={tasks[activeTaskIndex].question}
                                 onChange={(e) => updateActiveTask('question', e.target.value)}
                                 style={{ 
                                     width: '100%',
-                                    minHeight:'200px',
+                                    minHeight:'150px',
                                     fontSize: '18px',
                                     resize: 'vertical',
                                     color: '#333',
@@ -217,10 +220,7 @@ export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
                             <span>{taskSettingsVisibility ? '▲' : '▼'}</span>
                         </div>
                         {taskSettingsVisibility && (
-                            <div style={{ display: 'flex', 
-                            flexDirection: 'column',
-                            gap: '10px',
-                            width:'50%' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width:'50%' }}>
                             <div style={oneSettingStyle}>
                                 <span>Тип:</span>
                                 <select 
@@ -262,10 +262,10 @@ export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
                         )}
 
                         {tasks[activeTaskIndex].type === 'single' && (
-                            <div style={{}}>
+                            <div>
                                 {tasks[activeTaskIndex].options.map((opt, index) => (
-                                        <div key={index} style={{display: 'flex', flexDirection:'row', gap:'10px'}}> 
-                                        {opt != '' && (<RadioButton 
+                                        <div key={index} style={{display: 'flex', flexDirection:'row', gap:'10px', marginBottom: '5px'}}> 
+                                        {opt !== '' && (<RadioButton 
                                         checked={tasks[activeTaskIndex].correctRadioOption === opt}
                                         onChange={() => handleRadioChange(opt)}
                                         name={tasks[activeTaskIndex].id}
@@ -274,7 +274,7 @@ export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
                                             placeholder={`Вариант ${index + 1}`}
                                             value={opt}
                                             onChange={(e) => handleOptionChange(index, e.target.value)}
-                                            style={{borderRadius: '15px'}}
+                                            style={{borderRadius: '15px', marginBottom: '0px'}}
                                         />
                                         </div>
                                         ))}
@@ -282,10 +282,10 @@ export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
                         )}
 
                         {tasks[activeTaskIndex].type === 'multiple' && (
-                            <div style={{}}>
+                            <div>
                                 {tasks[activeTaskIndex].options.map((opt, index) => (
-                                        <div key={index} style={{display: 'flex', flexDirection:'row', gap:'10px'}}> 
-                                        {opt != '' && (<CheckboxSquare 
+                                        <div key={index} style={{display: 'flex', flexDirection:'row', gap:'10px', marginBottom: '5px'}}> 
+                                        {opt !== '' && (<CheckboxSquare 
                                             checked={tasks[activeTaskIndex].correctBoxOptions.includes(opt)}
                                             onChange={() => handleCheckboxChange(opt, tasks[activeTaskIndex].correctBoxOptions)}
                                         />)}
@@ -293,7 +293,7 @@ export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
                                             placeholder={`Вариант ${index + 1}`}
                                             value={opt}
                                             onChange={(e) => handleOptionChange(index, e.target.value)}
-                                            style={{borderRadius: '15px'}}
+                                            style={{borderRadius: '15px', marginBottom: '0px'}}
                                         />
                                         </div>
                                         ))}
@@ -308,13 +308,15 @@ export const TestCreatorContent = ({onSave, onDataChange, initialData}) => {
                 )}
             </div>
 
-            {/* 5. Кнопки действий */}
+            {/* 5. Кнопки действий (Фиксированные внизу) */}
             <div style={{
-                
                 display: 'flex', 
                 flexDirection: 'row', 
                 justifyContent: 'space-between',
-                 }}>
+                flexShrink: 0,
+                paddingTop: '10px',
+                borderTop: '1px solid #eee'
+            }}>
                 <ActionButton onClick={handleAddTask}
                     style={{borderRadius:'10px'}}>
                     + Добавить задание
