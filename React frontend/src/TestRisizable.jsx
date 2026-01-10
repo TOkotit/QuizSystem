@@ -11,7 +11,7 @@ const resizeStyle = {
   flexDirection: 'column',
   background: 'transparent', 
   pointerEvents: 'all',
-  position: 'relative', // Важно для абсолютного позиционирования детей
+  position: 'relative', 
 };
 
 const TestResizable = ({ id, data, selected }) => {
@@ -26,7 +26,7 @@ const TestResizable = ({ id, data, selected }) => {
               if (node.id === id) {
                   return {
                       ...node,
-                      data: { ...node.data, pollId: newId }, // Теперь ID теста навсегда в узле
+                      data: { ...node.data, pollId: newId }, 
                   };
               }
               return node;

@@ -7,6 +7,7 @@ import { usePollsApi } from '../../hooks/usePollsApi';
 
 
 const PollWidget = ({ initialTitle, pollId}) => {
+    
     const [pollCreationData, setPollCreationData] = useState({ 
         ownerID: '',
         title: initialTitle || '', 
@@ -79,60 +80,64 @@ const PollWidget = ({ initialTitle, pollId}) => {
         }
     }, []);
     
-        const getInfo = useCallback((data) => {
-            if (!data) return;
-    
-            console.log("Widget initialized with:", data);
-    
-            const { 
-                widgetId, 
-                userId, 
-                role, 
-                config, 
-                board 
-            } = data;
-    
-            // 1. Обработка Конфигурации (Config)
-            // Предполагаем, что pollId лежит внутри config, если виджет уже был настроен ранее
-            if (config && config.pollId) {
-                // Если есть ID теста, сохраняем его, это триггернет useEffect для загрузки из БД
-                // (Логика уже есть в вашем TestWidget: useEffect на pollId)
-                // Но нам нужно как-то передать этот pollId в пропсы или стейт. 
-                // В текущей архитектуре pollId приходит пропсом, но здесь мы получаем его динамически.
-                // Решение: Добавить локальный стейт для overridePollId или вызывать fetchTest напрямую.
-                
-                // Для примера вызовем fetchTest напрямую, если pollId пришел в конфиге:
-                fetchPoll(config.pollId).then(serverPoll => {
-                    if (serverPoll) {
-                        setPollCreationData({
-                            ownerID: serverPoll.ownerID,
-                            id: serverPoll.id,
-                            title: serverPoll.title,
-                        });
-                        if (serverPoll.settings) {
-                            setPollSettingsData(serverPoll.settings);
-                        }
-                    }
-                });
-            }
-    
-            // 2. Обработка Ролей (Role)
-            // Определяем режим просмотра в зависимости от роли пользователя на доске
-            // 'admin'/'editor' -> могут редактировать ('creator')
-            // 'viewer'/'guest' -> только проходят тест ('display')
-            const canEdit = ['admin', 'editor', 'owner'].includes(role);
+    const getInfo = useCallback((data) => {
+        if (!data) return;
+
+        console.log("Poll Widget initialized with:", data);
+
+        const { 
+            widgetId, 
+            userId, 
+            role, 
+            config, 
+            board 
+        } = data;
+        if (widgetId) {
             
-            if (canEdit) {
-                // Если админ, но тест уже создан (есть данные), показываем настройки или превью
-                // Если тест пустой, показываем 'creator'
-                setViewMode(prev => (config?.pollId ? 'display' : 'creator'));
-            } else {
-                // Обычные пользователи всегда видят только режим прохождения
-                setViewMode('display');
-            }
-    
+            (async () => {
+                try {
+                    const serverPoll = await fetchPoll(widgetId);
+                    if (!serverPoll) return;
+                    setSavedPollData(serverPoll);
+
+                    const optionsFromDB = (serverPoll.choices || []).map(c => c.choice_text);
+
+                    setPollCreationData({ 
+                        title: serverPoll.title, 
+                        options: [...optionsFromDB.filter(o => o.trim() !== ''), optionsFromDB.length > 0 ? '' : '']
+                    });
+
+                    let datePart = '';
+                    let timePart = '';
+                    if (serverPoll.end_date) {
+                        const parts = serverPoll.end_date.split('T');
+                        datePart = parts[0];
+                        timePart = parts[1] ? parts[1].substring(0, 5) : ''; 
+                    }
+
+                    setPollSettingsData({
+                        isAnonymous: serverPoll.is_anonymous,
+                        multipleAnswers: serverPoll.multiple_answers,
+                        endDate: datePart,
+                        endTime: timePart,
+                    });
+
+                    setViewMode('display');
+                    
+                } catch (e) {
+                    console.error('Ошибка загрузки опроса:', e);
+                }
+            })();
+        }
+
+        const canEdit = ['admin', 'editor', 'owner'].includes(role);
         
-        }, [fetchPoll]);
+        if (canEdit) {
+            setViewMode(prev => (widgetId ? 'display' : 'creator'));
+        } else {
+            setViewMode('display');
+        }
+    }, [fetchPoll]);
 
     useEffect(() => {
         if (!pollId) return;
@@ -260,12 +265,6 @@ const PollWidget = ({ initialTitle, pollId}) => {
                     onDataChange={setPollSettingsData} 
                     initialData={pollSettingsData} 
                     toggleSettings={handleSettingsBack} 
-                    // onDelete={() => {
-                    //     if (window.confirm("Вы уверены, что хотите удалить этот опрос?")) {
-                    //         alert("Опрос удален (здесь будет вызов API)");
-                    //         // В будущем здесь добавим: setViewMode('creator'); или удаление из списка
-                    //     }
-                    // }}
                 />
             )}
             

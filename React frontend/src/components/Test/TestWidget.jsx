@@ -19,6 +19,7 @@ const TestWidget = ({ initialTitle, pollId: testId }) => {
     const [isDataLoaded, setIsDataLoaded] = useState(false);
     const [currentUserId, setCurrentUserId] = useState(null);
     const [testCreationData, setTestCreationData] = useState({
+        id: null,
         owner: '',
         title: initialTitle || '',
         tasks: []
@@ -43,6 +44,55 @@ const TestWidget = ({ initialTitle, pollId: testId }) => {
         }
         setCurrentUserId(userId);
     }, []);
+
+    const getInfo = useCallback((data) => {
+            if (!data) return;
+    
+            console.log("Test Widget initialized with:", data);
+    
+            const { 
+                widgetId, 
+                userId, 
+                role, 
+                config, 
+                board 
+            } = data;
+            if (widgetId) {
+                
+                (async () => {
+                    try {
+                        const serverTest = await fetchTest(widgetId);
+                        if (!serverTest) return;
+
+                        setSavedTestData(serverTest);
+
+                        setTestCreationData({ 
+                            id: serverTest.id,
+                            title: serverTest.title,
+                            tasks: serverTest.tasks || [],
+                            all_attempts: serverTest.all_attempts,
+                            owner: serverTest.owner
+                        });
+
+                        if (serverTest.settings) 
+                                setTestSettingsData(serverTest.settings);
+                        
+                        setIsDataLoaded(true);
+                        
+                    } catch (e) {
+                        console.error('Ошибка загрузки теста:', e);
+                    }
+                })();
+            }
+    
+            const canEdit = ['admin', 'editor', 'owner'].includes(role);
+            
+            if (canEdit) {
+                setViewMode(prev => (widgetId ? 'display' : 'creator'));
+            } else {
+                setViewMode('display');
+            }
+        }, [fetchTest]);
 
     useEffect(() => {
         if (!testId) return;
