@@ -12,13 +12,13 @@ import {
 import '@xyflow/react/dist/style.css';
 import ResizableNode from './ResizableNode.jsx';
 import PollResizable from './PollResizable.jsx';
-import TestRisizable from './TestRisizable.jsx';
+import TestResizable from './TestResizable.jsx';
 import './App.css'; 
 
 const nodeTypes = {
     resizable: ResizableNode,
     pollresizable: PollResizable,
-    testresizable: TestRisizable,
+    testresizable: TestResizable,
 };
 
 const AppContent = () => {
