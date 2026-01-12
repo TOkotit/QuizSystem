@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-8^=#59z8(sd$6(a#&nzu=_6myw#7yr%bzow3scz5t0f_2bdk&f
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.loca.lt']
 
 
 # Application definition
@@ -53,11 +53,14 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+CORS_ALLOW_ALL_ORIGINS = True  # Для теста разрешаем всем
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:3000",
+#     "http://127.0.0.1:3000",
+# ]
+
+CSRF_TRUSTED_ORIGINS = ['https://*.loca.lt']
 
 CORS_ALLOW_CREDENTIALS = True
 
