@@ -12,7 +12,7 @@ const getCookie = (name) => {
     return null;
 };
 
-const TestWidget = ({ initialTitle, pollId: testId }) => { 
+const TestWidget = ({ initialTitle, pollId: testId, nodeId, nodeProps, onSaved }) => { 
     const { createTest, loading, error, fetchTest, deleteTest } = useTestsApi();
 
     const [viewMode, setViewMode] = useState(testId ? 'display' : 'creator');
@@ -167,6 +167,10 @@ const TestWidget = ({ initialTitle, pollId: testId }) => {
                 setSavedTestData(result); 
                 setIsDataLoaded(true);
                 setViewMode('display'); 
+
+                if (typeof onSaved === 'function') {
+                    onSaved(result.id);
+                }
             }
         } catch (err) {
             console.error("Ошибка при сохранении:", err);

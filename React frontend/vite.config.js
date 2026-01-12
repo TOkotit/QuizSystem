@@ -2,23 +2,27 @@
 
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  
-  // !!! НОВЫЙ БЛОК: Настройка сервера разработки и проксирования !!!
-  server: {
-    // 1. Проксирование всех запросов, начинающихся с /api, на бэкенд (порт 8000)
-    // Это гарантирует, что запросы к /api/polls/... будут отправлены Django
-    // proxy: {
-    //   '/api': {
-    //     target: 'http://127.0.0.1:8000', // Адрес Django-сервера
-    //     changeOrigin: true,             // Важно для корректной работы с заголовками
-    //     secure: false,                  // Не используем HTTPS в разработке
-    //   },
-    // },
-    port: 5173, 
-    strictPort: true,
-  },
+  build: {
+    lib: {
+      entry: path.resolve(__dirname, 'src/index.js'),
+      name: 'PollTestWidgets',
+      fileName: (format) => `poll-test-widgets.${format}.js`
+    },
+    rollupOptions: {
+      // Исключаем React из сборки, чтобы не было дубликатов
+      external: ['react', 'react-dom', '@xyflow/react'], 
+      output: {
+        globals: {
+          react: 'React',
+          'react-dom': 'ReactDOM',
+          '@xyflow/react': 'ReactFlow'
+        }
+      }
+    }
+  }
 })

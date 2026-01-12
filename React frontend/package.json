@@ -1,8 +1,20 @@
 {
-  "name": "react-frontend",
-  "private": true,
+  "name": "poll-test-widgets",
   "version": "0.0.0",
   "type": "module",
+  "files": ["dist"],
+  "main": "./dist/poll-test-widgets.umd.js",
+  "module": "./dist/poll-test-widgets.es.js",
+  "exports": {
+    ".": {
+      "import": "./dist/poll-test-widgets.es.js",
+      "require": "./dist/poll-test-widgets.umd.js"
+    }
+  },
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",

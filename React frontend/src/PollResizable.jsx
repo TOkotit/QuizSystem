@@ -14,7 +14,8 @@ const resizeStyle = {
   position: 'relative', // Важно для абсолютного позиционирования детей
 };
 
-const PollResizable = ({ id, data, selected }) => {
+const PollResizable = (props) => {
+  const { id, data, selected, xPos, yPos, dragging } = props;
   const [size, setSize] = useState({ width: 280, height: 450 });
   
   // Инициализация API
@@ -85,22 +86,17 @@ const PollResizable = ({ id, data, selected }) => {
             initialTitle={data.label}
             pollId={data?.pollId}    // если node уже привязан к опросу
             nodeId={id}             // id узла в React Flow
-            onSaved={(savedPoll) => {
-                // Обновляем node.data, чтобы хранить pollId и, например, новый label
+            onSaved={(pollId) => {
                 setNodes((nds) =>
-                nds.map((node) => {
-                    if (node.id === id) {
-                    return {
-                        ...node,
-                        data: {
-                        ...node.data,
-                        pollId: savedPoll.id,
-                        label: savedPoll.title || node.data.label,
-                        },
-                    };
-                    }
-                    return node;
-                })
+                    nds.map((node) => {
+                        if (node.id === id) {
+                            return {
+                                ...node,
+                                data: { ...node.data, pollId: pollId },
+                            };
+                        }
+                        return node;
+                    })
                 );
             }}
         />}

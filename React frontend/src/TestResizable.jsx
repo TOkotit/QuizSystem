@@ -14,7 +14,9 @@ const resizeStyle = {
   position: 'relative', 
 };
 
-const TestResizable = ({ id, data, selected }) => {
+const TestResizable = (props) => {
+  // Деструктурируем нужные свойства из NodeProps
+  const { id, data, selected, xPos, yPos, dragging } = props;
   const [size, setSize] = useState({ width: 280, height: 450 });
   
   const updateNodeInternals = useUpdateNodeInternals();
@@ -95,9 +97,12 @@ const TestResizable = ({ id, data, selected }) => {
 
         {/* Основной виджет опроса */}
         {<TestWidget
+          nodeId={id}
           initialTitle={data.label}
           pollId={data.pollId} 
-          onSaved={handleTestSaved} />}
+          nodeProps={props}
+          onSaved={handleTestSaved}
+          />}
 
       </div>
       <Handle type="source" position={Position.Left} />
