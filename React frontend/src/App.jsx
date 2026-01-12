@@ -29,7 +29,10 @@ const AppContent = () => {
     const fetchFromDB = useCallback(async (url) => {
         const res = await fetch(url, {
             method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
+            mode: 'cors',
+            headers: { 'Content-Type': 'application/json',
+                'bypass-tunnel-reminder': 'true',
+             }
         });
         if (!res.ok) throw new Error(`Ошибка загрузки: ${url}`);
         return res.json();
@@ -38,8 +41,8 @@ const AppContent = () => {
     const syncWithDatabase = useCallback(async () => {
         try {
             const [pollsData, testsData] = await Promise.all([
-                fetchFromDB('/api/polls/list/'),
-                fetchFromDB('/api/polls/tests/')
+                fetchFromDB('https://polls-tests-widgets-backend-1357.loca.lt/api/polls/list/'),
+                fetchFromDB('https://polls-tests-widgets-backend-1357.loca.lt/api/polls/tests/')
             ]);
 
             const newNodes = [];

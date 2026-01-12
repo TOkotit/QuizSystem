@@ -55,6 +55,19 @@ MIDDLEWARE = [
 ]
 CORS_ALLOW_ALL_ORIGINS = True  # Для теста разрешаем всем
 
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+    "bypass-tunnel-reminder", # ДОБАВЬТЕ ЭТУ СТРОКУ
+]
+
 # CORS_ALLOWED_ORIGINS = [
 #     "http://localhost:3000",
 #     "http://127.0.0.1:3000",

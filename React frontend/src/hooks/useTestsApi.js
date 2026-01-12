@@ -1,48 +1,59 @@
 import { useState, useCallback } from 'react';
 
-// Базовый URL теперь включает префикс polls, так как мы решили не менять структуру
-const API_BASE_URL = '/api/polls/tests/';
 
-const getCsrfToken = () => {
-  const name = 'csrftoken=';
-  const cookies = document.cookie ? document.cookie.split(';') : [];
-  for (let c of cookies) {
-    c = c.trim();
-    if (c.startsWith(name)) return decodeURIComponent(c.substring(name.length));
-  }
-  return null;
-};
 
-const apiFetch = async (url, opts = {}) => {
-  const res = await fetch(url, {
-    credentials: 'include',
-    ...opts,
-    headers: { 
-      'Content-Type': 'application/json', 
-      ...opts.headers 
-    }
-  });
-  
-  const data = await res.json().catch(() => null);
-  if (!res.ok) {
-    const err = new Error(data?.detail || res.statusText || 'Ошибка сервера');
-    err.status = res.status;
-    err.data = data;
-    throw err;
-  }
-  return data;
-};
-export const useTestsApi = () => {
+export const useTestsApi = (baseUrl) => {
+
+  if (!baseUrl) baseUrl = 'https://polls-tests-widgets-backend-1357.loca.lt';
+
+  // const API_BASE_URL = '/api/polls/tests/';
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Функция для сборки полного URL
+  const makeUrl = (endpoint) => {
+    // Если baseUrl передан, используем его, иначе пустая строка (относительный путь)
+    const base = baseUrl ? baseUrl.replace(/\/$/, '') : ''; 
+    return `${base}/api/polls/tests${endpoint}`;
+  };
 
+  const getCsrfToken = () => {
+    const name = 'csrftoken=';
+    const cookies = document.cookie ? document.cookie.split(';') : [];
+    for (let c of cookies) {
+      c = c.trim();
+      if (c.startsWith(name)) return decodeURIComponent(c.substring(name.length));
+    }
+    return null;
+  };
+
+  const apiFetch = async (url, opts = {}) => {
+    const res = await fetch(url, {
+      credentials: 'include',
+      ...opts,
+      headers: { 
+        'Content-Type': 'application/json', 
+        'bypass-tunnel-reminder': 'true',
+        ...opts.headers 
+      }
+    });
+    
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      const err = new Error(data?.detail || res.statusText || 'Ошибка сервера');
+      err.status = res.status;
+      err.data = data;
+      throw err;
+    }
+    return data;
+  };
 
   const fetchTest = useCallback(async (id) => {
     setLoading(true);
     setError(null);
     try {
-        const data = await apiFetch(`${API_BASE_URL}${id}/`);
+        const data = await apiFetch(makeUrl(`/${id}/`));
         return data;
     } catch (err) {
         setError(err.message);
@@ -57,7 +68,7 @@ export const useTestsApi = () => {
     setError(null);
     try {
         const csrfToken = getCsrfToken();
-        return await apiFetch(`${API_BASE_URL}${testId}/`, {
+        return await apiFetch(makeUrl(`/${testId}/`), {
             method: 'DELETE',
             headers: { 
                 'X-CSRFToken': csrfToken 
@@ -111,7 +122,7 @@ const createTest = useCallback(async (testCreationData, testSettingsData) => {
         end_date: formattedEndDate ? formattedEndDate : null
       };
 
-      return await apiFetch(API_BASE_URL, {
+      return await apiFetch(makeUrl('/'), {
         method: 'POST',
         body: JSON.stringify(payload)
       });
@@ -128,7 +139,7 @@ const submitAttempt = useCallback(async (payload) => {
     setLoading(true);
     setError(null);
     try {
-      return await apiFetch(`${API_BASE_URL}submit/`, {
+      return await apiFetch(makeUrl(`/submit/`), {
         method: 'POST',
         body: JSON.stringify(payload)
       });

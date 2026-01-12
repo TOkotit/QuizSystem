@@ -1,8 +1,24 @@
 import { useState, useCallback } from 'react';
 
-const API_BASE_URL = '/api/polls/';
 
-const getCsrfToken = () => {
+
+export const usePollsApi = (baseUrl) => {
+
+  // const API_BASE_URL = '/api/polls/';
+
+  if (!baseUrl) baseUrl = 'https://polls-tests-widgets-backend-1357.loca.lt';
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Функция для сборки полного URL
+  const makeUrl = (endpoint) => {
+    // Если baseUrl передан, используем его, иначе пустая строка (относительный путь)
+    const base = baseUrl ? baseUrl.replace(/\/$/, '') : ''; 
+    return `${base}/api/polls${endpoint}`;
+  };
+
+  const getCsrfToken = () => {
   const name = 'csrftoken=';
   const cookies = document.cookie ? document.cookie.split(';') : [];
   for (let c of cookies) {
@@ -10,52 +26,47 @@ const getCsrfToken = () => {
     if (c.startsWith(name)) return decodeURIComponent(c.substring(name.length));
   }
   return null;
-};
-
-const fetchCsrf = async () => {
-  await fetch("/api/csrf/", { credentials: "include" }); 
-};
-
-const apiFetch = async (url, opts = {}) => {
-  const baseOptions = {
-    credentials: 'include',
-    method: 'GET',
-    headers: {
-        'Content-Type': 'application/json',
-    },
   };
 
+  const fetchCsrf = async () => {
+    await fetch(makeUrl("/csrf/"), { credentials: "include" }); 
+  };
+
+  const apiFetch = async (url, opts = {}) => {
+    const baseOptions = {
+      credentials: 'include',
+      method: 'GET',
+      mode: 'cors',
+      headers: {
+          'Content-Type': 'application/json',
+          'bypass-tunnel-reminder': 'true',
+      },
+    };
 
 
 
-  const finalOptions = {
-    ...baseOptions,
-    ...opts,
-    headers: {
-        ...baseOptions.headers,
-        ...(opts.headers || {}),
+
+    const finalOptions = {
+      ...baseOptions,
+      ...opts,
+      headers: {
+          ...baseOptions.headers,
+          ...(opts.headers || {}),
+      }
+    };
+    
+    const res = await fetch(url, finalOptions);
+    const text = await res.text();
+    let data = null;
+    try { data = text ? JSON.parse(text) : null; } catch (e) { data = text; }
+
+    if (!res.ok) {
+      const error = new Error((data && (data.detail || data.message)) || res.statusText);
+      error.status = res.status;
+      throw error;
     }
+    return data;
   };
-  
-  const res = await fetch(url, finalOptions);
-  const text = await res.text();
-  let data = null;
-  try { data = text ? JSON.parse(text) : null; } catch (e) { data = text; }
-
-  if (!res.ok) {
-    const error = new Error((data && (data.detail || data.message)) || res.statusText);
-    error.status = res.status;
-    throw error;
-  }
-  return data;
-};
-
-export const usePollsApi = (externalApiBaseUrl) => {
-
-  const API_BASE_URL = externalApiBaseUrl || '/api/polls/';
-
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
   const deletePoll = useCallback(async (pollId, userId) => {
     setLoading(true);
@@ -64,8 +75,9 @@ export const usePollsApi = (externalApiBaseUrl) => {
       await fetchCsrf();
       const csrfToken = getCsrfToken();
 
-      const data = await apiFetch(`${API_BASE_URL}${pollId}/`, {
+      const data = await apiFetch(makeUrl(`/${pollId}/`), {
         method: 'DELETE',
+        mode: 'cors',
         headers: { 
             'X-CSRFToken': csrfToken,
             'X-User-ID': userId
@@ -85,19 +97,19 @@ export const usePollsApi = (externalApiBaseUrl) => {
   const fetchAllPolls = useCallback(async () => {
       try {
           // Предполагается, что GET-запрос на /api/polls/ возвращает массив всех опросов
-         const data = await apiFetch(`${API_BASE_URL}list/`, { method: 'GET' }); 
+         const data = await apiFetch(makeUrl('/list/'), { method: 'GET' }); 
           return data;
       } catch (e) {
           console.error('Ошибка получения списка опросов:', e);
           throw e;
       }
-  }, [apiFetch, API_BASE_URL]);
+  }, [apiFetch]);
 
   const fetchPoll = useCallback(async (pollId) => {
     setLoading(true);
     setError(null);
     try {
-     const data = await apiFetch(`${API_BASE_URL}${pollId}/`, { method: 'GET' });
+     const data = await apiFetch(makeUrl(`/${pollId}/`), { method: 'GET', mode: 'cors', });
       return data;
     } catch (err) {
       setError(err.message);
@@ -137,8 +149,9 @@ export const usePollsApi = (externalApiBaseUrl) => {
     };
 
     try {
-      const data = await apiFetch(`${API_BASE_URL}create/`, {
+      const data = await apiFetch(makeUrl('/create/'), {
         method: 'POST',
+        mode: 'cors',
         headers: { 
             'X-CSRFToken': csrfToken,
         },
@@ -157,7 +170,7 @@ export const usePollsApi = (externalApiBaseUrl) => {
     setLoading(true);
     setError(null);
     try {
-     const data = await apiFetch(`${API_BASE_URL}${pollId}/`, { method: 'GET' });
+     const data = await apiFetch(makeUrl(`/${pollId}/`), { method: 'GET' });
       return data;
     } catch (err) {
       setError(err.message);
@@ -176,7 +189,7 @@ export const usePollsApi = (externalApiBaseUrl) => {
     if (!csrfToken) throw new Error("CSRF token missing!");
 
     try {
-      const data = await apiFetch(`${API_BASE_URL}${pollId}/vote/`, {
+      const data = await apiFetch(makeUrl(`/${pollId}/vote/`), {
         method: 'POST',
         headers: { 'X-CSRFToken': csrfToken },
         body: JSON.stringify({ choice_id: voteData.choiceId,  user: voteData.userId}),
@@ -190,7 +203,6 @@ export const usePollsApi = (externalApiBaseUrl) => {
     }
   }, []);
 
-  // --- ДОБАВЛЯЕМ НОВУЮ ФУНКЦИЮ ---
   const unvotePoll = useCallback(async (pollId, userId) => {
     setLoading(true);
     setError(null);
@@ -200,7 +212,7 @@ export const usePollsApi = (externalApiBaseUrl) => {
 
     try {
       // Отправляем POST запрос на /unvote/
-      const data = await apiFetch(`${API_BASE_URL}${pollId}/unvote/`, {
+      const data = await apiFetch(makeUrl(`/${pollId}/unvote/}`), {
         method: 'POST',
         headers: { 'X-CSRFToken': csrfToken },
         body: JSON.stringify({ user: userId }), // Передаем ID пользователя
