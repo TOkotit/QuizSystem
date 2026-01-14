@@ -1,10 +1,13 @@
 {
   "name": "poll-test-widgets",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "type": "module",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "main": "./dist/poll-test-widgets.umd.js",
   "module": "./dist/poll-test-widgets.es.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/poll-test-widgets.es.js",
@@ -12,10 +15,9 @@
     }
   },
   "peerDependencies": {
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0",
-
-    "@xyflow/react": "^12.0.0"  
+    "@xyflow/react": "^12.0.0",
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
   },
   "scripts": {
     "dev": "vite",
@@ -28,14 +30,16 @@
     "re-resizable": "^6.11.2"
   },
   "devDependencies": {
-    "@types/react": "^18.3.0",
+    "@types/react": "^18.3.27",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.0",
+    "@xyflow/react": "^12.9.3",
     "autoprefixer": "^10.4.0",
     "eslint": "^9.0.0",
     "postcss": "^8.4.0",
     "tailwindcss": "^3.4.0",
+    "typescript": "^5.9.3",
     "vite": "^5.4.0",
-    "@xyflow/react": "^12.9.3"
+    "vite-plugin-dts": "^4.5.4"
   }
 }
