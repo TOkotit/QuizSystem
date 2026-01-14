@@ -36,7 +36,6 @@ export const usePollsApi = (baseUrl) => {
     const baseOptions = {
       credentials: 'include',
       method: 'GET',
-      mode: 'cors',
       headers: {
           'Content-Type': 'application/json',
           'bypass-tunnel-reminder': 'true',
@@ -77,7 +76,6 @@ export const usePollsApi = (baseUrl) => {
 
       const data = await apiFetch(makeUrl(`/${pollId}/`), {
         method: 'DELETE',
-        mode: 'cors',
         headers: { 
             'X-CSRFToken': csrfToken,
             'X-User-ID': userId
@@ -109,7 +107,7 @@ export const usePollsApi = (baseUrl) => {
     setLoading(true);
     setError(null);
     try {
-     const data = await apiFetch(makeUrl(`/${pollId}/`), { method: 'GET', mode: 'cors', });
+     const data = await apiFetch(makeUrl(`/${pollId}/`), { method: 'GET' });
       return data;
     } catch (err) {
       setError(err.message);
@@ -151,7 +149,6 @@ export const usePollsApi = (baseUrl) => {
     try {
       const data = await apiFetch(makeUrl('/create/'), {
         method: 'POST',
-        mode: 'cors',
         headers: { 
             'X-CSRFToken': csrfToken,
         },
